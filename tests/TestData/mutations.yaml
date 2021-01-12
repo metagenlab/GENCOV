@@ -1,0 +1,61 @@
+reference: "NC_045512.2"
+mutations:
+    sim_SNV001:
+        hgvs: "g.13444A>C"
+        pos: 13444
+        ref: "A"
+        alt: "C"
+        type: "synonymous"
+        description: "Ser>Ser in first position of RNA_Dependent Polymerase"
+    sim_SNV002:
+        hgvs: "g.13480G>A"
+        pos: 13480
+        ref: "G"
+        alt: "A"
+
+        type: "synonymous"
+        description: "Val>Val synonymous mutation RNA_Dependent Polymerase but disrupts rna stemloop base in secondary structure"
+    sim_SNV003:
+        hgvs: "g.13490CCC>GGC"
+        pos: 13490
+        ref: "CCC"
+        alt: "GGC"
+        type: "non_synonymous"
+        description: "Pro>Gly non-synonymous mutation RNA_Dependent Polymerase exchanges aminioacid in rna stemloop loop section"
+    sim_STRUC001:
+        hgvs: "g.16261_16394del"
+        pos: 16260
+        ref: "CAATTCACAGACTTCATTAAGATGTGGTGCTTGCATACGTAGACCATTCTTATGTTGTAAATGCTGTTACGACCATGTCATATCAACATCACATAAATTAGTCTTGTCTGTTAATCCGTATGTTTGCAATGCTCC"
+        alt: "C"
+        type: "struct_deletion"
+        description: "Major Deletion in Helicase"
+    sim_SNV004:
+        hgvs: "g.21583A>G"
+        pos: 21583
+        ref: "A"
+        alt: "G"
+        type: "synonymous"
+        description: "Mutation in Spike Protein: Leu > Leu "
+    sim_SNV005:
+        hgvs: "g.21603A>C"
+        pos: 21603
+        ref: "A"
+        alt: "C"
+        type: "missense"
+        description: "Mutation in Spike Protein: Gln > Pro"
+    sim_SNV006:
+        hgvs: "g.21752T>A"
+        pos: 21752
+        ref: "T"
+        alt: "A"
+        type: "missense"
+        description: "Mutation in Spike Protein: Trp > Arg"
+    sim_SNV007:
+        hgvs: "g.21763DEL"
+        pos: 21762
+        ref: "CT"
+        alt: "C"
+        type: "synonymous_frameshift"
+        description: "Mutation in Spike Protein: Ala > Ala  Frameshift deletion"
+
+

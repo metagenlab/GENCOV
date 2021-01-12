@@ -1,0 +1,260 @@
+###
+# usage:
+#
+# create samples.config.yaml in your project folder
+# modify ncov_minipie.config to contain the paths to gatk and your projectfolder
+# run as snake script e.g. snakemake -s ncov_minipipe.snake --configfile ../analyses_automatisation/ncov_minipipe.config --cores 60
+###
+
+
+# IMPORT MODULES
+import re
+import os
+import pprint
+import sys
+import yaml
+
+
+# DEBUGGING
+## use as DEBUG(variable) for debugging at runtime
+pp = pprint.PrettyPrinter(indent=4)
+DEBUG = pp.pprint
+
+
+# INPUT CHECK
+## preparing checks
+def checkConfigKey(key, config):
+    if key in config and config[key] not in ["", False, None]:
+        return True
+    return False
+
+def isFileConfig(key, config):
+    if not checkConfigKey(key, config) or not os.path.isfile(config[key]):
+        return False
+    return True
+
+err = []
+
+## check if config was provided
+if config:
+    pass
+else:
+    err.append("config seems to be empty or not provided.")
+
+## checking sample yaml file [mandatory file]
+if not isFileConfig('samples', config):
+    err.append("missing sample file:")
+    try:
+        err.append(config["samples"])
+    except:
+        err.append("config seems to be empty, samples not provided or not config file provided.")
+
+## checking reference file [mandatory file]
+if not isFileConfig('reference', config):
+    err.append("missing reference file:")
+    try:
+        err.append(config["reference"])
+    except:
+        err.append("config seems to be empty, reference not provided or not config file provided.")
+
+
+## checking primer files [optional file]
+if not checkConfigKey('primer', config):
+    sys.stderr.write("Note:\n")
+    sys.stderr.write("No primer file has been defined.\n")
+    sys.stderr.write("Primer clipping will not be performed.\n")
+elif not os.path.isfile(config['primer']):
+    err.append("missing primer file:")
+    try:
+        err.append(config["primer"])
+    except:
+        err.append("config seems to be empty, primer not provided or not config file provided.")
+
+
+## checking adapter file [optional file]
+if not checkConfigKey('adapter', config):
+    sys.stderr.write("Note:\n")
+    sys.stderr.write("No adapter file has been defined.\n")
+    sys.stderr.write("Adapter clipping will not be performed.\n")
+elif not os.path.isfile(config['adapter']):
+    err.append("missing adapter file:")
+    try:
+        err.append(config["adapter"])
+    except:
+        err.append("config seems to be empty, adapter not provided or not config file provided.")
+
+## checking kraken database [optional folder]
+if not checkConfigKey('krakenDb', config):
+    sys.stderr.write("Note:\n")
+    sys.stderr.write("No kraken database has been defined.\n")
+    sys.stderr.write("Taxonomic read filtering will not be performed.\n")
+elif not os.path.isdir(config["krakenDb"]):
+    err.append("Kraken database folder defined by 'krakenDb' does not exist.")
+
+## checking annotation file [optional file]
+if not checkConfigKey('annotation', config):
+    sys.stderr.write("Note:\n")
+    sys.stderr.write("No annotation file has been defined.\n")
+    sys.stderr.write("Variant inspection will not be performed.\n")
+
+## input error reporting
+if err:
+    sys.stderr.write("Input Error(s):\n")
+    sys.stderr.write("\n".join(err) + "\n")
+    sys.exit(1)
+
+
+# CONSTANT DEFINITIONS
+## sample files
+SAMPLES = dict()
+with open(os.path.join(config["samples"]), 'r') as handle:
+    SAMPLES = yaml.safe_load(handle)
+    SAMPLES = {str(x[0]): x[1] for x in SAMPLES.items()}
+
+## other files or folders
+ANNOT = isFileConfig('annotation', config)
+KRAKEN_DB = config["krakenDb"] if checkConfigKey('krakenDb', config) else None
+KRAKEN_TAX_ID = config["krakenTaxID"] if checkConfigKey('krakenTaxID', config) else None
+
+## read clipping parameters
+if isFileConfig('primer', config):
+    PRIMER = config['primer']
+    PRIMER_MISMATCH = config['max_primer_mismatches']
+else:
+    PRIMER = None
+    PRIMER_MISMATCH = None
+
+## variant calling
+VAR_CALL_COV = config['var_call_cov']
+VAR_CALL_COUNT = config['var_call_count']
+VAR_CALL_FRAC = config['var_call_frac']
+
+## variant hard filtering
+VAR_FILTER_MQM = config['var_filter_mqm']
+VAR_FILTER_SAP = config['var_filter_sap']
+VAR_FILTER_QUAL = config['var_filter_qual']
+
+## consensus generation
+CNS_MIN_COV = config['cns_min_cov']
+CNS_GT_ADJUST = config["cns_gt_adjust"] if checkConfigKey('cns_gt_adjust', config) else None
+
+## reporting parameters
+REPORT_RUNID = config['run_id'] if checkConfigKey('run_id', config) else ""
+
+## output folders
+PROJFOLDER = os.path.join(config["output"], "results")
+IUPAC_CNS_FOLDER = os.path.join(PROJFOLDER, "consensuses_iupac")
+MASKED_CNS_FOLDER = os.path.join(PROJFOLDER, "consensuses_masked")
+DATAFOLDER = ["logs", "trimmed"]
+if KRAKEN_DB:
+    DATAFOLDER.extend(["classified", "filtered"])
+DATAFOLDER.extend(["mapping", "mapping_stats", "variant_calling", "masking", "reporting"])
+DATAFOLDER = { x[1]: os.path.join(PROJFOLDER, "intermediate_data", str(x[0]).zfill(2) + "_" + x[1]) for x in enumerate(DATAFOLDER) }
+if not KRAKEN_DB:
+    DATAFOLDER["classified"] = PROJFOLDER
+    DATAFOLDER["filtered"] = PROJFOLDER
+
+## files
+REFERENCE = os.path.join(DATAFOLDER["mapping"], "reference.fasta")
+ADAPTERS = config["adapter"] if isFileConfig('adapter', config) else None # the adpater file cannot be provided since it is copyright protected ILLUMINA!
+
+## ref indexes
+PICARD_INDEX = os.path.splitext(REFERENCE)[0] + '.dict'
+SAMTOOLS_INDEX = REFERENCE + ".fai"
+BWA_INDEX = REFERENCE + ".bwt"
+
+# SANITY CHECKS FOR SAMPLES & THRESHOLDS
+## kraken input test
+if KRAKEN_DB and not KRAKEN_TAX_ID:
+    err.append("Kraken2 database defined but no TaxID.")
+
+## variant and cns threshold test
+if VAR_CALL_FRAC < 0 or VAR_CALL_FRAC > 1:
+    err.append("The value of var_call_frac cannot be lower than 0 or greater than 1.")
+if CNS_MIN_COV < VAR_CALL_COV:
+    err.append("var_call_cov cannot be smaller than cns_min_cov.\n"
+			    "They are {varcall} and {cns}".format(varcall=V,
+													  cns=CNS_MIN_COV))
+if CNS_GT_ADJUST and (CNS_GT_ADJUST <= 0.5 or CNS_GT_ADJUST > 1):
+    err.append("The value of cns_gt_adjust has to be greater than 0.5 and not greater than 1.")
+
+## sanity error report
+if err:
+    sys.stderr.write("Input Error(s):\n")
+    sys.stderr.write("\n".join(err) + "\n")
+    sys.exit(1)
+
+
+# GENERAL FUNCTIONS
+def getFastq(wildcards):
+    return SAMPLES[str(wildcards.sample)]["read1"], SAMPLES[str(wildcards.sample)]["read2"]
+
+
+# RULE ALL
+def input_all(wildcards):
+    files = []
+
+    ## consensus
+    for sample in SAMPLES:
+        files.append(os.path.join(IUPAC_CNS_FOLDER, sample + ".iupac_consensus.fasta"))
+
+    ## masked consensus
+    for sample in SAMPLES:
+        files.append(os.path.join(MASKED_CNS_FOLDER, sample + ".masked_consensus.fasta"))
+
+    ## variant annotation
+    if ANNOT:
+        for sample in SAMPLES:
+            files.append(os.path.join(DATAFOLDER["variant_calling"], sample, sample + ".annotation.html"))
+
+    ## report
+    files.append(os.path.join(PROJFOLDER, "qc_report.html"))
+
+    return files
+
+rule all:
+    input:
+        input_all
+
+
+# RULE IMPORT
+## general rules
+include: "rules/get_version.smk"
+include: "rules/prepare_reference.smk"
+
+## indexing
+include: "rules/index_samtools.smk"
+include: "rules/index_picard.smk"
+include: "rules/index_bwa.smk"
+
+## amplicon primer clipping
+include: "rules/trim_primer.smk"
+include: "rules/trim_reads.smk"
+
+## taxonomic read classification
+include: "rules/classify_reads.smk"
+include: "rules/filter_reads.smk"
+
+## read mapping
+include: "rules/map_reads.smk"
+include: "rules/sort_bam.smk"
+include: "rules/index_bam.smk"
+include: "rules/get_read_cov.smk"
+
+## variant calling
+include: "rules/call_vars_freebayes.smk"
+include: "rules/call_vars_gatk.smk"
+include: "rules/index_vcf.smk"
+
+## variant annotation
+include: "rules/inspect_vars.smk"
+
+## consensus generation
+include: "rules/create_consensus.smk"
+
+#statistics
+include: "rules/get_bamstats.smk"
+include: "rules/get_insert_size.smk"
+
+#report
+include: "rules/create_report.smk"

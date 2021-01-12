@@ -1,0 +1,243 @@
+# Filename conventions for FastQ files
+
+ion_torrent_bam:
+    main_exts:
+        - '.bam'
+    formats:
+        - some_ion_torrent_format:
+            main_sep: '_'
+            format:
+                sample_name:
+                    regex: '.+'
+
+
+illumina_fastq:
+    main_exts: ['.fasta', '.fastq', '.fas', '.fna', '.fnq', '.fa']
+    secondary_exts: ['.gz', '.xz', '.bz2', '.lzma', '.lzo', '.lz', '.rz']
+    formats:
+        - illumina_basel_fastq:
+            main_sep: '_'
+            id_fields: ['openBIS_id', 'sample_name']
+            format:
+                openBIS_id:
+                    subf_num: 3
+                flowcell: {}
+                lane_short:
+                    regex: '\d+'
+                sample_name:
+                    subf_num: 2
+                index:
+                    subf_num: 2
+                sample_num:
+                    regex: 'S\d+'
+                lane:
+                    regex: 'L\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+                mismatches_index:
+                    regex: 'MM_\d+'
+                    optional: True
+
+        - illumina_legacy1_fastq:
+            main_sep: '_'
+            id_fields: ['sample_name', 'unknown1', 'date', 'unknown2']
+            id_sep: '_'
+            format:
+                sample_name:
+                    subf_num: 4
+                unknown1: {}
+                date:
+                    subf_num: 3
+                unknown2:
+                    subf_num: 3
+                barcode: {}
+                lane:
+                    regex: 'L\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - illumina_legacy2_fastq:
+            main_sep: '_'
+            id_fields: ['sample_name', 'unknown1', 'date', 'unknown2']
+            id_sep: '_'
+            format:
+                sample_name:
+                    subf_num: 4
+                unknown1:
+                    subf_num: 2
+                date:
+                    subf_num: 3
+                unknown2:
+                    subf_num: 3
+                barcode: {}
+                lane:
+                    regex: 'L\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - illumina_someinstitution1.0_fastq:
+            main_sep: '_'
+            format:
+                date:
+                    regex: '\d+'
+                lab_id: {}
+                sample_name: {}
+                sample_num:
+                    regex: 'S\d+'
+                lane:
+                    regex: 'L\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - illumina_someinstitution1.1_fastq:
+            main_sep: '_'
+            format:
+                sample_name:
+                    subf_num: 3
+                sample_num:
+                    regex: 'S\d+'
+                lane:
+                    regex: 'L\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - illumina_someinstitution1.2_fastq:
+            main_sep: '_'
+            format:
+                sample_name:
+                    subf_num: 5
+                    subf_sep: '-'
+                sample_num:
+                    regex: 'S\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - illumina_someinstitution2_fastq:
+            main_sep: '_'
+            format:
+                sample_name:
+                    subf_num: 3
+                    subf_sep: '-'
+                sample_num:
+                    regex: 'S\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - illumina_someinstitution2.1_fastq:
+            main_sep: '_'
+            format:
+                sample_name:
+                    subf_num: 2
+                    subf_sep: '-'
+                sample_num:
+                    regex: 'S\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - illumina_standard_fastq:
+            main_sep: '_'
+            format:
+                sample_name: {}
+                sample_num:
+                    regex: 'S\d+'
+                lane:
+                    regex: 'L\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - illumina_fallback1_fastq:
+            main_sep: '_'
+            format:
+                sample_name:
+                    regex: '.+'
+                sample_num:
+                    regex: 'S\d+'
+                lane:
+                    regex: 'L\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - illumina_fallback2_fastq:
+            main_sep: '_'
+            format:
+                sample_name:
+                    regex: '.+'
+                lane:
+                    regex: 'L\d+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - illumina_fallback3_fastq:
+            main_sep: '_'
+            format:
+                sample_name:
+                    regex: '.+'
+                read:
+                    regex: 'R\d+'
+                running_num:
+                    regex: '\d+'
+
+        - sra_standard_paired_fastq:
+            main_sep: '_'
+            format:
+                sample_name:
+                    regex: 'SRR.+'
+                read:
+                    regex: '\d'
+
+        - sra_standard_single_fastq:
+            main_sep: '_'
+            format:
+               sample_name:
+                   regex: 'SRR.+'
+
+        - dwgsim2_paired_bwa_fastq:
+            main_sep: '\.'
+            format:
+                sample_name:
+                    regex: '.+'
+                bwa_flag:
+                    regex: 'bwa'
+                read:
+                    regex: 'read\d'
+
+        - illumina_fallback4_fastq:
+            main_sep: '_'
+            format:
+                sample_name:
+                    regex: '.+'
+                read:
+                    regex: 'R\d+'
+pacbio:
+    main_exts: ['.bax', '.h5', '.xml']
+    secondary_exts: ['.h5']
+    formats:
+        - standard_pacbio:
+            main_sep: '\.'
+            format:
+                sample_name:
+                    regex: '.+'
+                file_selector: {}
+

@@ -1,0 +1,6 @@
+sample1:
+    read1: "path/to/read1.fastq.gz"
+    read2: "path/to/read2.fastq.gz"
+sample2:
+    read1: "path/to/read1.fastq.gz"
+    read2: "path/to/read2.fastq.gz"

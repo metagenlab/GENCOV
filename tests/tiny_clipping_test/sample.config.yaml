@@ -1,0 +1,4 @@
+tiny_test:
+  alt_id: tiny_test_data
+  read1: {TESTDIR}/in_tiny.R1.fastq.gz
+  read2: {TESTDIR}/in_tiny.R1.fastq.gz

@@ -1,0 +1,3 @@
+VCF_ALL_VARS;gen;;;NC_045512.2.fasta;
+VCF_NO_STRUCT_ALL_VARS;gen;;;NC_045512.2.fasta;
+VCF_FILE_ALL_VARS;file;../variations.vcf;NC_0445512.2.fasta;

@@ -1,0 +1,749 @@
+---
+title: "sample report for nCoV minipipeline"
+output: 
+  html_document:
+    toc: true
+params:
+  proj_folder: "none"
+  list_folder: "none"
+  run_name: "none"
+  tax_id: "none"
+  version: "none"
+---
+
+<style>
+  .superwideimage{
+      overflow-x:scroll;
+      white-space: nowrap;
+  }
+
+  .superwideimage img{
+     max-width: none;
+  }
+  
+</style>
+
+<style>
+  .superhighimage{
+      overflow:auto;
+      height: 500px;
+      width: 100%;
+      margin-top: 10px;
+      margin-bottom: 
+  }
+
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, error = FALSE)
+
+library("data.table")
+library("formattable")
+library("ggplot2")
+library("kableExtra")
+library("plyr")
+library("rjson")
+```
+
+```{r get_cmd_line_parameters}
+# params$proj_folder contains the folder that the project was run in
+
+l.dirlist <- list.dirs(file.path(params$proj_folder, "intermediate_data"), recursive = F)
+
+
+trimmed_folder <- l.dirlist[grepl(pattern = "trimmed", x = l.dirlist)]
+mapping_stats_folder <- l.dirlist[grepl(pattern = "mapping_stats", x = l.dirlist)]
+kraken_folder <- l.dirlist[grepl(pattern = "classified", x = l.dirlist)]
+
+if (!dir.exists(params$proj_folder)) {
+    stop("input folder does not exist")
+}
+
+if (!dir.exists(params$list_folder)) {
+    stop("output folder does not exist")
+}
+
+if (!dir.exists(trimmed_folder)) {
+    stop("trimmed folder does not exist")
+}
+
+if (!dir.exists(mapping_stats_folder)) {
+    stop("mapping stats folder does not exist")
+}
+
+kraken_run <- FALSE
+if (!dir.exists(kraken_folder) || length(kraken_folder) == 0) {
+    kraken_run <- FALSE
+} else {
+    kraken_run <- TRUE
+}
+
+```
+
+```{r def_functions}
+
+# input of file listing. requires file names like /path/to/nCoV1.bamstats.txt
+f.get_filenames <- function(l.input){
+    sapply(l.input, function(x){
+        filename <- unlist(strsplit(x, '/'))[length(unlist(strsplit(x, '/')))]
+        samplename <- unlist(strsplit(filename, '\\.'))[1]
+        return(samplename)
+    })
+    #returns named character vector of sample names, e.g. nCoV1
+}
+
+# modified color_bar to fix direction from "rtl" to "ltr"
+f.color_bar <- function (color = "lightgray", fun = "proportion", 
+    ...) 
+{
+    fun <- match.fun(fun)
+    formattable::formatter("span", style = function(x) style(display = "inline-block", 
+        direction = "ltr", `border-radius` = "4px", 
+        `padding-right` = "2px", `background-color` = csscolor(color), 
+        width = percent(fun(as.numeric(x), ...))))
+}
+```
+
+
+```{r read_data}
+# this chunk reads mapping stats and trimming stats
+l.infiles.trimming <- list.files(path = trimmed_folder, 
+                                 pattern = "*.fastp.json$", 
+                                 full.names = T, 
+                                 recursive = T)
+
+l.infiles.bamstats <- list.files(path = mapping_stats_folder, 
+                                 pattern = "*.bamstats.pipe.txt$", 
+                                 full.names = T, 
+                                 recursive = T)
+
+l.infiles.coverage <- list.files(path = mapping_stats_folder, 
+                                 pattern = "*.coverage.tsv$", 
+                                 full.names = T, 
+                                 recursive = T)
+
+l.infiles.fragsize <- list.files(path = mapping_stats_folder, 
+                                 pattern = "*.fragsize.tsv$", 
+                                 full.names = T, 
+                                 recursive = T)
+
+# initialise empty list
+l.infiles.kraken <- list()
+if (kraken_run) {
+    l.infiles.kraken <- list.files(path = kraken_folder, 
+                                   pattern = "*.report.txt$", 
+                                   full.names = T, 
+                                   recursive = T)
+}
+
+
+# put names to file names
+
+names(l.infiles.trimming) <- f.get_filenames(l.infiles.trimming)
+names(l.infiles.bamstats) <- f.get_filenames(l.infiles.bamstats)
+names(l.infiles.coverage) <- f.get_filenames(l.infiles.coverage)
+names(l.infiles.fragsize) <- f.get_filenames(l.infiles.fragsize)
+names(l.infiles.kraken) <- f.get_filenames(l.infiles.kraken)
+
+if (length(l.infiles.trimming) == 0) {
+    stop("no trimming stat files identified")
+}
+
+if (length(l.infiles.bamstats) == 0) {
+    stop("no bam stat files identified")
+}
+
+if (length(l.infiles.coverage) == 0) {
+    stop("no coverage files identified")
+}
+
+if (length(l.infiles.fragsize) == 0) {
+    stop("no fragment size files identified")
+}
+
+if (length(l.infiles.kraken) == 0) {
+    print("no kraken run files identified")
+    kraken_run <- FALSE
+}
+
+```
+
+## Sequencing run
+
+```{r conditional_sentence, results='asis'}
+
+if (params$run_name != 'none') {
+  cat(paste0("Sequencing was performed in run: ", params$run_name, "\n"))
+} else {
+  cat(paste0("No ID for a sequencing run was submitted. \n"))
+}
+
+```
+
+
+```{r read_coverage_preanalyses}
+
+# read file content
+# this is waste of time as this data could be used, but will be discarded
+
+dt.coverage <- as.data.table(ldply(l.infiles.coverage, fread))
+colnames(dt.coverage) <- c("sample","chromosome", "position", "depth")
+
+
+dt.output <- dt.coverage[, sum(depth > 10), by = sample]
+setnames(dt.output, "V1", "covered.bases")
+
+dt.output$genome.length <- dt.coverage[,length(depth), by = sample]$V1
+dt.output$genome.coverage <- dt.output$covered.bases / dt.output$genome.length
+
+```
+
+```{r conditional_warning, results='asis'}
+dt.output <- dt.output[grepl("NK|Empty", dt.output$sample, ignore.case = TRUE) & dt.output$genome.coverage >= 0.2, ]
+
+if (nrow(dt.output) > 0) {
+    
+    cat("## WARNING \n")
+    cat("Samples identified automatically as negative controls show unusual large coverage of the reference genome (more than 20%). Please check the following table, if this is expected for the samples. \n")
+}
+
+```
+
+
+```{r conditional_table}
+
+if (nrow(dt.output) > 0) {
+    
+    dt.output$genome.coverage <- round(dt.output$genome.coverage, 2)
+
+    
+    # add a row with all 0 and 1 to make colour scaling reproducible
+    df.tmp <- data.frame("sample" = c(0,1), 
+                         "genome.length" = c(0,1),
+                         "covered.bases" = c(0,1), 
+                         "genome.coverage" = c(0,1)
+                         )
+    dt.output <- rbind(dt.output, df.tmp)
+    rm(df.tmp)
+    # highlight important rows
+    dt.output$sample <- cell_spec(dt.output$sample, color = ifelse(dt.output$genome.coverage > 0.2, "red", "black"))
+    dt.output$genome.coverage <- color_tile("white", "orange")(dt.output$genome.coverage)
+    #remove added lines
+    dt.output <- head(dt.output, n = -2)
+    
+    kbl(dt.output[,c("sample", "covered.bases", "genome.coverage")], 
+        digits = 2, 
+        col.names = c("sample", "ref.coverage [bp]", "ref.coverage [fraction]"), 
+        caption = "Reference genome coverage in base pairs and as fraction of the total length. Bases with more than 10x sequencing depth are counted as covered. Negative control's names are highlighted in red if more than 20% of reference genome is covered, increasing coverage fraction is coloured orange (scaled from 0 to 1).",
+        escape = F) %>%
+        kable_styling(bootstrap_options = c("striped", "hover"), fixed_thead = T) %>% 
+        scroll_box(height = "400px")
+}
+```
+
+```{r conditional_cleanup}
+
+rm(dt.output)
+rm(dt.coverage)
+
+```
+## Trimming statistics
+
+Trimming and clipping is perfomed using fastp (v 0.20.0).
+
+### Read counts
+
+Raw reads were subjected to adapter clipping.
+
+```{r read_trimming}
+l.trimming.data.json <- lapply(l.infiles.trimming, function(x){
+    fromJSON(file = x)
+})
+
+df.trimming.data <- ldply(l.trimming.data.json, function(e){
+    df.before <- as.data.frame(do.call(rbind, e$summary$before_filtering))
+    colnames(df.before) <- c("before.trimming")
+    df.after  <- as.data.frame(do.call(rbind, e$summary$after_filtering))
+    colnames(df.after) <- c("after.trimming")
+
+    df.output <- data.frame(feature = rownames(df.before),
+                            before = df.before$before.trimming,
+                            after = df.after$after.trimming)
+    return(df.output)
+})
+
+# rename 1st column
+tmp <- colnames(df.trimming.data)
+tmp[1] <- c("sample")
+colnames(df.trimming.data) <- tmp
+
+df.filter.data <- ldply(l.trimming.data.json, function(e){
+    
+    df.output <- data.frame(passed_filter = e$filtering_result$passed_filter_reads,
+                            low_qual = e$filtering_result$low_quality_reads,
+                            high_N = e$filtering_result$too_many_N_reads,
+                            low_complex = e$filtering_result$low_complexity_reads,
+                            short = e$filtering_result$too_short_reads
+                            )
+    return(df.output)
+})
+
+# rename 1st column
+tmp <- colnames(df.filter.data)
+tmp[1] <- c("sample")
+colnames(df.filter.data) <- tmp
+
+```
+
+```{r table_trimming, fig.cap="Counts of reads before and after clipping as well as base count of >=Q30."}
+
+df.summary <- data.frame(sample = unique(df.trimming.data$sample),
+                        reads.before.clip = df.trimming.data$before[grepl("total_reads", df.trimming.data$feature)],
+                        reads.after.clip  = df.trimming.data$after[grepl("total_reads", df.trimming.data$feature)],
+                        ratio.clip = df.trimming.data$after[grepl("total_reads", df.trimming.data$feature)] / 
+                            df.trimming.data$before[grepl("total_reads", df.trimming.data$feature)],
+                        q30.before.clip = df.trimming.data$before[grepl("q30_rate", df.trimming.data$feature)],
+                        q30.after.clip  = df.trimming.data$after[grepl("q30_rate", df.trimming.data$feature)]
+)
+
+df.table <- df.summary
+
+# add coloured bar charts to table
+df.table$reads.before.clip <- f.color_bar("lightgreen")(df.table$reads.before.clip)
+df.table$reads.after.clip <- f.color_bar("lightgreen")(df.table$reads.after.clip)
+
+
+kbl(x = df.table,
+    col.names = c("sample", "reads before clip", "reads after clip", "ratio passed", "Q30 before clip", "Q30 after clip"),
+    digits = 2,
+    caption = "Counts of reads before and after clipping as well as base count of >=Q30. Read counts before and after clipping augmented with bar chart for visual aid.",
+    escape = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), fixed_thead = T) %>% 
+  scroll_box(height = "400px")
+
+
+# save table as csv for later use
+write.csv(  x=df.summary, 
+            row.names = FALSE, 
+            file = file.path(params$list_folder, "read_stats.csv")
+          )
+```
+
+<div class="superwideimage">
+
+```{r count_trimming_samples}
+
+sample.count <- length(unique(df.summary$sample))
+plot.width <- sample.count * 0.5
+
+```
+
+```{r plot_trimming, fig.width=plot.width, fig.cap="Read count before and past adapter clipping."}
+
+df.plot <- melt(df.summary,
+                id.vars = "sample",
+                measure.vars = c("reads.before.clip", "reads.after.clip"))
+
+ggplot(data = df.plot,
+       aes(sample, value, fill = variable)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(title = "read counts before & after trimming",
+         x = "sample",
+         y = "count",
+         fill = "clipping") +
+    scale_fill_manual(values = c("#DD4444", "#4444DD"), labels = c("raw", "clipped")) +
+    theme(plot.title = element_text(hjust = 0.5), 
+          axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "bottom")
+
+```
+
+</div>
+
+
+### Filtering details
+
+Reads were subjected to adapter clipping and quality trimming. 
+The latter includes low complexity filtering as well as classical Phred based quality filtering. 
+
+```{r table_filtering, fig.cap="Counts of reads after clipping and counts of reads removed by several filters."}
+
+df.filter.data$passed_filter <- f.color_bar("lightgreen")(df.filter.data$passed_filter)
+
+kbl(x = df.filter.data,
+    digits = 2,
+    caption = "Counts of reads after clipping and counts of reads removed by several filters. Passed filter read counts augmented with bar chart for visual aid.",
+    escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), fixed_thead = T)  %>% 
+  scroll_box(height = "400px")
+
+
+```
+
+```{r trimming_cleanup}
+
+rm(df.plot)
+rm(df.summary)
+rm(df.table)
+rm(df.trimming.data)
+rm(df.filter.data)
+
+```
+
+### Species filtering
+
+Reads can be filtered against a defined taxonomical ID predefined at the start of the pipeline run. 
+If this parameter was set and Kraken classification was successful, filtering data will be shown here.
+
+```{r read_kraken}
+
+    # Kraken2 output column labels.
+    # Percentage of fragments covered by the clade rooted at this taxon
+    # Number of fragments covered by the clade rooted at this taxon
+    # Number of fragments assigned directly to this taxon
+    # A rank code, indicating (U)nclassified, (R)oot, (D)omain, (K)ingdom, (P)hylum, (C)lass, (O)rder, (F)amily, (G)enus, or (S)pecies. Taxa that are not at any of these 10 ranks have a rank code that is formed by using the rank code of the closest ancestor rank with a number indicating the distance from that rank. E.g., "G2" is a rank code indicating a taxon is between genus and species and the grandparent taxon is at the genus rank.
+    # NCBI taxonomic ID number
+    # Indented scientific name
+
+df.kraken_output <- data.frame()
+
+if (kraken_run && !is.na(as.numeric(params$tax_id))) {
+    dt.kraken_data <- ldply(l.infiles.kraken, fread)
+    colnames(dt.kraken_data) <- c("sample", "read_ratio", "read_count", "read_count_specific", "rank", "ncbi_taxid", "sciname")
+    # select unclassified and user supplied tax id
+    df.kraken_output <- dt.kraken_data[dt.kraken_data$ncbi_taxid %in% c(0, params$tax_id), c("sample", "read_ratio", "read_count", "ncbi_taxid", "sciname")]
+    # make tables wide for absolute and relative read counts
+    dt.ratio <- data.table::dcast(as.data.table(df.kraken_output), sample ~ sciname, value.var = c("read_ratio"))
+    dt.count <- data.table::dcast(as.data.table(df.kraken_output), sample ~ sciname, value.var = c("read_count"))
+    # join both tables for output
+    df.kraken_output <- join(dt.ratio, dt.count, by = "sample")
+    
+    if (length(colnames(df.kraken_output)) == 3) {
+        colnames(df.kraken_output) <- paste0(colnames(df.kraken_output), c("", " (ratio)", " (count)"))
+    } else if (length(colnames(df.kraken_output)) == 5) {
+        colnames(df.kraken_output) <- paste0(colnames(df.kraken_output), c("", " (ratio)", " (ratio)", " (count)", " (count)"))
+    }
+    
+}
+```
+
+```{r table_kraken, fig.cap="Read counts after species binning using Kraken."}
+
+if (kraken_run && !is.na(as.numeric(params$tax_id))) {
+    
+    # add rows for reproducible colour scaling
+    if (length(colnames(df.kraken_output)) == 3) {
+        df.tmp <- as.data.frame(matrix(rep(c(0,100),3), ncol = 3))
+    } else if (length(colnames(df.kraken_output)) == 5) {
+        df.tmp <- as.data.frame(matrix(rep(c(0,100),5), ncol = 5))
+    }
+    colnames(df.tmp) <- colnames(df.kraken_output)
+    df.kraken_output <- rbind(df.kraken_output, df.tmp)
+    
+    # save table as csv for later use
+    write.csv(  x=df.kraken_output, 
+                row.names = FALSE, 
+                file = file.path(params$list_folder, "species_filtering.csv")
+    )
+    
+    # add coloured tiles to column
+    if (length(colnames(df.kraken_output)) == 3) {
+        # don't do anything
+        # df.kraken_output[,2] <- color_tile("orange", "white")(df.kraken_output[,2])
+    } else if (length(colnames(df.kraken_output)) == 5) {
+        # df.kraken_output[,2] <- color_tile("orange", "white")(df.kraken_output[,2])
+        #df.kraken_output[,3] <- color_tile("white", "orange")(df.kraken_output[,3])
+    }
+    
+    
+    # remove added lines for colour scaling
+    df.kraken_output <- head(df.kraken_output, n = -2)
+    
+    kbl(df.kraken_output, 
+        caption = "Amount of reads assigned to selected species. Ratios are coloured to highlight high unclassified content (scaled 0-100%)", escape = F) %>%
+        kable_styling(bootstrap_options = c("striped", "hover"), fixed_thead = T) %>% 
+        scroll_box(height = "400px")
+}
+
+```
+
+```{r kraken_cleanup}
+
+if (kraken_run && !is.na(as.numeric(params$tax_id))) {
+  rm(df.kraken_output)
+  rm(dt.kraken_data)
+}
+
+```
+
+## Mapping statisics
+
+Species classification of the reads may have been performed.
+If this was done, reads assigned to the defined species were submitted to genome mapping. If classification was omitted reads after Fastp filtering were used for mapping.
+
+Reads were mapped to the reference genome using BWA. 
+
+DNA fragments are counted twice, if paired end sequencing was employed.
+
+```{r read_mappingstats}
+
+df.bamstat.data <- ldply(l.infiles.bamstats, fread, sep = '|')
+colnames(df.bamstat.data) <- c("sample", "count", "unknown", "description")
+
+```
+
+```{r table_bamstats}
+
+df.output <- data.frame("sample" = unique(df.bamstat.data$sample),
+                        "input" = df.bamstat.data$count[grepl("in total", df.bamstat.data$description)],
+                        "mapped" = df.bamstat.data$count[grepl("properly paired", df.bamstat.data$description)])
+
+df.output$mapping.rate <- df.output$mapped / df.output$input
+
+# save table as csv for later use
+write.csv(  x=df.output, 
+            row.names = FALSE, 
+            file = file.path(params$list_folder, "mapping_stats.csv")
+)
+
+df.output$input <- f.color_bar("lightgreen")(df.output$input)
+df.output$mapped <- f.color_bar("lightgreen")(df.output$mapped)
+
+kbl(df.output, 
+    col.names = c("sample", "reads in", "reads mapped", "mapped ratio"), 
+    digits = 3,
+    caption = "Amount of reads subjected to reference genome mapping (after the optional Kraken filtering) and the respective numbers of mapped reads. In paired end sequencing each DNA fragment is counted twice. Input and mapped read counts augmented with bar chart for visual aid.",
+    escape = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), fixed_thead = T) %>% 
+  scroll_box(height = "400px")
+```
+
+
+```{r bamstats_cleanup}
+
+rm(df.bamstat.data)
+rm(df.output)
+
+```
+
+## Fragment sizes
+
+Fragment sizes were determined by mapping reads reference genome and extracting the fragment size from the respective bam file.
+Data of forward and reverse mapping reads were used, which leads to a duplicated entry for each paired end mapping.
+The log value of the median is given for comparison with the values shown in the plots.
+
+
+```{r read_fragsizes}
+
+# read.csv produces a new column for each read file
+dt.fragsizes <- as.data.table(ldply(l.infiles.fragsize, fread))
+colnames(dt.fragsizes) <- c("sample", "fragsize")
+
+dt.fragsizes$fragsize.abs <- abs(dt.fragsizes$fragsize)
+dt.fragsizes.median <- dt.fragsizes[, median(fragsize.abs), by = c("sample")]
+setnames(dt.fragsizes.median, "V1", "median.fragsize")
+dt.fragsizes.median$median.fragsize <- as.numeric(as.character(dt.fragsizes.median$median.fragsize))
+
+# add standard deviation
+dt.fragsizes.median$sd.fragsize <- dt.fragsizes[, sd(fragsize.abs), by = c("sample")]$V1
+
+# 4 plots by 1.2 inch
+sample.count <- length(unique(dt.fragsizes$sample))
+height <- ceiling(sample.count/4)
+plot.height <- height * 1.2
+```
+
+
+### Fragment size table
+
+```{r table_fragsizes, fig.cap="Median fragment size determined by the distance of reads after mapping to reference genome."}
+
+# save table as csv for later use
+write.csv(  x=dt.fragsizes.median, 
+            row.names = FALSE, 
+            file = file.path(params$list_folder, "fragment_sizes.csv")
+)
+
+# conditional formatting for fragsizes not between 90 and 110
+dt.fragsizes.median$median.fragsize <- ifelse(dt.fragsizes.median$median.fragsize >= 110 | dt.fragsizes.median$median.fragsize <= 90,
+                                              cell_spec(dt.fragsizes.median$median.fragsize, background = "orange", align = "right"),
+                                              dt.fragsizes.median$median.fragsize)
+
+kbl(x = dt.fragsizes.median,
+    col.names = c("sample", "fragment size (median)", "fragment size (stdev)"),
+    caption = "Median fragment size determined by the distance of reads after mapping to reference genome. Read distance not between 90 and 110 bp are highlighted in orange.",
+    digits = 0,
+    escape = FALSE) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), fixed_thead = T) %>% 
+  scroll_box(height = "400px")
+```
+
+### Fragment size plot
+
+Plotting the fragment sizes usually shows a distribution with multiple peaks. Ideally just one peak dominates the plot at around 100bp.
+
+<div class=superhighimage>
+
+```{r plot_fragsizes, fig.width=10, fig.height=plot.height, fig.cap="Fragment size distribution determined by the distance of reads after mapping to reference genome."}
+ggplot(dt.fragsizes, aes(fragsize.abs, colour = sample, fill = sample)) +
+    geom_density() +
+    facet_wrap(~sample, ncol = 4, scales = "free_y") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "none",
+          plot.title = element_text(hjust = 0.5)) +
+    scale_x_continuous(trans = "log10") +
+    labs(title = "Fragment size histogram",
+         x = "fragment size")
+
+```
+
+</div>
+
+```{r fragsize_cleanup}
+
+rm(dt.fragsizes)
+rm(dt.fragsizes.median)
+
+```
+
+## Coverage distribution
+
+```{r read_coverage}
+# read file content
+dt.coverage <- as.data.table(ldply(l.infiles.coverage, fread))
+colnames(dt.coverage) <- c("sample","chromosome", "position", "depth")
+
+
+# reduce amount of data points to be plottd
+dt.coverage[, bin:=rep(seq(1, ceiling(length(position) / 100)), each = 100, length.out = length(position)), by = "sample"]
+dt.coverage[, mid.bin:=seq(1,length(position)) %% 100 ]
+dt.coverage[, mean.cov:=mean(depth), by=c("sample", "bin")]
+
+# 4 plots by ~2 inch
+sample.count <- length(unique(dt.coverage$sample))
+height <- ceiling(sample.count/3)
+plot.height <- height * 1.8
+```
+
+### Sequence depth distribution on reference genome
+
+Sequence depth was calculated at each position and plotted. The aim for positive samples is an evenly distributed high sequence depth.
+
+<div class=superhighimage>
+
+```{r plot_coverage, fig.width=10, fig.height=plot.height, fig.cap="Sequence depth distribution on nCoV genome. Sequence depth is shown versus the position of the base in the genome. Please be aware of the varying y axis scaling."}
+
+if (sum(dt.coverage$depth)>0) {
+    # only apply log10 scaling, if any depth value is >0
+    ggplot(dt.coverage[dt.coverage$mid.bin == 50,], aes(position, depth, colour = sample)) +
+        geom_point(size = 0.1) +
+        labs(title = "coverage distribution") +
+        theme(plot.title = element_text(hjust = 0.5), 
+          axis.text.x = element_text(angle = 45, hjust = 0.5),
+          legend.position = "none") +
+        scale_y_continuous(trans = "log10") +
+        facet_wrap(~sample, ncol = 3, scales = "free_y")
+} else {
+    ggplot(dt.coverage[dt.coverage$mid.bin == 50,], aes(position, depth, colour = sample)) +
+        geom_point(size = 0.1) +
+        labs(title = "coverage distribution") +
+        theme(plot.title = element_text(hjust = 0.5), 
+          axis.text.x = element_text(angle = 45, hjust = 0.5),
+          legend.position = "none") +
+        facet_wrap(~sample, ncol = 3, scales = "free_y")
+}
+```
+
+</div>
+
+### Accumulated sequence depth
+
+Sequence depth on the reference genome is visualised as histograms binning bases of identical coverage.
+
+<div class=superhighimage>
+
+```{r plot_coverage_histogram, fig.width=10, fig.height=plot.height, fig.cap="Sequence depth distribution on nCoV genome. The amount of bases is shown dependend on the respective sequence depth. Please watch out for the different axis scaling."}
+
+ggplot(dt.coverage[dt.coverage$mid.bin == 50,], aes(depth, fill = sample)) +
+    geom_histogram(binwidth = 10) +
+    facet_wrap(~sample, ncol = 4, scales = "free") +
+    labs(title = "coverage histogram") +
+    theme(plot.title = element_text(hjust = 0.5),
+          legend.position = "none",
+          axis.text.x = element_text(angle = 45, hjust = 0.5))
+```
+
+</div>
+
+### Tabular view of coverage distribution
+
+```{r get_coverage}
+
+dt.output <- dt.coverage[, sum(depth > 10), by = sample]
+setnames(dt.output, "V1", "covered.bases")
+
+dt.output$genome.length <- dt.coverage[,length(depth), by = sample]$V1
+dt.output$genome.coverage <- dt.output$covered.bases / dt.output$genome.length
+
+dt.output$DP.median <- dt.coverage[, median(depth), by = sample]$V1
+dt.output$DP.mean <- dt.coverage[, mean(depth), by = sample]$V1
+
+```
+
+
+```{r write_positve_samples}
+# positve and negative tables as by consideration of cleanplex quality measures (95% reference genome coverage)
+write.csv( x=dt.output[dt.output$genome.coverage >= 0.95], 
+           row.names = FALSE, 
+           file = file.path(params$list_folder, "positive_samples.csv"))
+write.csv( x=dt.output[dt.output$genome.coverage < 0.95], 
+           row.names = FALSE, 
+           file = file.path(params$list_folder, "negative_samples.csv"))
+# complete table output
+write.csv( x=dt.output, 
+           row.names = FALSE, 
+           file = file.path(params$list_folder, "coverage_samples.csv"))
+```
+
+```{r table_coverage}
+
+# add a row with all 0 and 1 to make colour scaling reproducible
+df.tmp <- data.frame("sample" = c(0,1), 
+                     "genome.length" = c(0,1),
+                     "covered.bases" = c(0,1), 
+                     "genome.coverage" = c(0,1),
+                     "DP.median" = c(0,0),
+                     "DP.mean" = c(0,0)
+)
+dt.output <- rbind(dt.output, df.tmp)
+
+
+# conditional formatting for reference coverage >95%
+dt.output$genome.coverage <- round(dt.output$genome.coverage, 2)
+dt.output$genome.coverage <- ifelse(dt.output$genome.coverage >= 0.95,
+                                    cell_spec(dt.output$genome.coverage, background = "lightgreen", align = "right"),
+                                    dt.output$genome.coverage)
+# coverage bar
+dt.output$genome.length <- f.color_bar("lightgreen")(dt.output$genome.length)
+
+# highlight negative controls
+dt.output$sample <- ifelse(grepl(pattern = "NK", dt.output$sample),
+                           cell_spec(dt.output$sample, color = "red"),
+                           dt.output$sample)
+
+#remove added lines
+dt.output <- head(dt.output, n = -2)
+
+
+kbl(dt.output[,c("sample", "covered.bases", "genome.coverage", "DP.median", "DP.mean")], 
+        digits = 2, 
+        col.names = c("sample", "coverage [bp]", "coverage [fraction]", "depth median", "depth mean"), 
+        caption = "Genome coverage values shown as coverage of the reference genome and sequencing depth. Bases with more than 10x sequencing depth are counted as covered. Sample names of negative controls are highlighted in red and reference genome coverage fraction >=95% is highlighted in green. Negative controls with more than 20% reference genome coverage could indicate contamination.",
+        escape = FALSE) %>%
+    kable_styling(bootstrap_options = c("striped", "hover"), fixed_thead = T) %>% 
+    scroll_box(height = "400px")
+```
+
+## Pipeline version
+
+This report was generated using covpipe pipeline version `r params$version`.

@@ -1,0 +1,12 @@
+test:
+    seed: 12345
+    platform: illumina
+    use_mod_reference: false
+    reference: tbd
+    fcoverage: 30
+    mod_reference: tbd
+    paired: True
+    replicates: 2
+    amplicon: false
+    technology: MSv3
+

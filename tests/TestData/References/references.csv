@@ -1,0 +1,6 @@
+HG38;ncbi;GRCh38.p13;find
+CommonColdCorona;ncbi;betacoronavirus 1;find
+SarsCov2Wuhan1;ncbi;NC_045512.2;find
+CommonColdRhino;ncbi;rhinovirus B;find
+KlebsiellaPneu;ncbi;Klebsiella pneumoniae;find
+HG19;file;hg19.fa
