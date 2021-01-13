@@ -113,6 +113,9 @@ with open(os.path.join(config["samples"]), 'r') as handle:
 
 ## other files or folders
 ANNOT = isFileConfig('annotation', config)
+ANNOT = True
+print("ANNOT", ANNOT)
+
 KRAKEN_DB = config["krakenDb"] if checkConfigKey('krakenDb', config) else None
 KRAKEN_TAX_ID = config["krakenTaxID"] if checkConfigKey('krakenTaxID', config) else None
 
@@ -125,6 +128,7 @@ else:
     PRIMER_MISMATCH = None
 
 ## variant calling
+VAR_CALL_TOOL = config['var_call_tool']
 VAR_CALL_COV = config['var_call_cov']
 VAR_CALL_COUNT = config['var_call_count']
 VAR_CALL_FRAC = config['var_call_frac']
@@ -196,16 +200,16 @@ def input_all(wildcards):
 
     ## consensus
     for sample in SAMPLES:
-        files.append(os.path.join(IUPAC_CNS_FOLDER, sample + ".iupac_consensus.fasta"))
+        files.append(os.path.join(IUPAC_CNS_FOLDER, VAR_CALL_TOOL, sample + ".iupac_consensus.fasta"))
 
     ## masked consensus
     for sample in SAMPLES:
-        files.append(os.path.join(MASKED_CNS_FOLDER, sample + ".masked_consensus.fasta"))
+        files.append(os.path.join(MASKED_CNS_FOLDER, VAR_CALL_TOOL, sample + ".masked_consensus.fasta"))
 
     ## variant annotation
     if ANNOT:
         for sample in SAMPLES:
-            files.append(os.path.join(DATAFOLDER["variant_calling"], sample, sample + ".annotation.html"))
+            files.append(os.path.join(DATAFOLDER["variant_calling"], sample, VAR_CALL_TOOL, sample + ".annotation.html"))
 
     ## report
     files.append(os.path.join(PROJFOLDER, "qc_report.html"))

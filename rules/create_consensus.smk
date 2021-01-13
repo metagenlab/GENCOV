@@ -20,9 +20,9 @@ rule createMaskConsensus:
 # retrieve deletion positions
 rule extract_del_positions:
     input:
-        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{sample}.vcf")
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.vcf")
     output:
-        os.path.join(DATAFOLDER["masking"], "{sample}", "{sample}.del.bed")
+        os.path.join(DATAFOLDER["masking"], "{sample}", "{snp_calling_tool}","{sample}.del.bed")
     params:
         cov = CNS_MIN_COV
     conda:
@@ -30,7 +30,7 @@ rule extract_del_positions:
     singularity: 
         "docker://rkibioinf/bcftools:1.11--19c96f3"
     log:
-        os.path.join(DATAFOLDER["logs"], "masking", "{sample}.consensus_mask.log")
+        os.path.join(DATAFOLDER["logs"], "masking", "{sample}.{snp_calling_tool}.consensus_mask.log")
     shell:
         r"""
             bcftools view -v indels {input[0]} | bcftools view -H | awk '{{print $1,$2,$2+length($4)}}' | sed 's/ /\t/g' > {output[0]}
@@ -40,9 +40,9 @@ rule extract_del_positions:
 rule filter_del_positions:
     input:
         os.path.join(DATAFOLDER["masking"], "{sample}", "{sample}.lowcov.raw.bed"),
-        os.path.join(DATAFOLDER["masking"], "{sample}", "{sample}.del.bed")
+        os.path.join(DATAFOLDER["masking"], "{sample}", "{snp_calling_tool}", "{sample}.del.bed")
     output:
-        os.path.join(DATAFOLDER["masking"], "{sample}", "{sample}.lowcov.bed")
+        os.path.join(DATAFOLDER["masking"], "{sample}", "{snp_calling_tool}", "{sample}.lowcov.bed")
     params:
         cov = CNS_MIN_COV
     conda:
@@ -50,7 +50,7 @@ rule filter_del_positions:
     singularity: 
         "docker://rkibioinf/bedtools:2.29.2--0bfe8ac"
     log:
-        os.path.join(DATAFOLDER["logs"], "masking", "{sample}.consensus_mask.log")
+        os.path.join(DATAFOLDER["logs"], "masking", "{sample}.{snp_calling_tool}.consensus_mask.log")
     shell:
         r"""
             bedtools subtract -a {input[0]} -b {input[1]} > {output[0]}
@@ -60,9 +60,9 @@ rule filter_del_positions:
 ## var hard filtering
 rule filterVarsConsensus:
     input:
-        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{sample}.vcf")
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.vcf")
     output:
-        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{sample}.filtered.vcf.gz")
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.vcf.gz")
     params:
         mqm = VAR_FILTER_MQM,
         sap = VAR_FILTER_SAP,
@@ -72,7 +72,7 @@ rule filterVarsConsensus:
     singularity: 
         "docker://rkibioinf/bcftools:1.11--19c96f3"
     log:
-        os.path.join(DATAFOLDER["logs"], "variant_calling", "{sample}.filtered.vcf.log")
+        os.path.join(DATAFOLDER["logs"], "variant_calling", "{sample}.{snp_calling_tool}.filtered.vcf.log")
     shell:
         r"""
 			temp_out="{output}"
@@ -88,38 +88,39 @@ rule filterVarsConsensus:
 ## genotype adjustment 
 rule adjustGtConsensus:
     input:
-        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{sample}.filtered.vcf.gz")
+        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.vcf.gz")
     output:
-        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{sample}.filtered.gt_adjust.vcf.gz")
+        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.gt_adjust.vcf.gz")
     params:
         frac = CNS_GT_ADJUST,
         script = os.path.join(workflow.basedir, "scripts", "adjust_gt.py"),
-        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{sample}.filtered.gt_adjust.vcf")
+        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.gt_adjust.vcf"),
+        snp_calling_tool = lambda wildcards: wildcards.snp_calling_tool
     conda:
         "../envs/bcftools.yaml"
     script:
         "../scripts/adjust_gt.py"
 
-## create ambig consensus
+## create ambig consensuss
 def input_createAmbiguousConsensus(wildcards):
     files = {}
     files['fasta'] = REFERENCE
-    files['mask'] = os.path.join(DATAFOLDER["masking"], wildcards.sample, wildcards.sample + ".lowcov.bed")
+    files['mask'] = os.path.join(DATAFOLDER["masking"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".lowcov.bed")
     if not CNS_GT_ADJUST:
-        files['vcf'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, wildcards.sample + ".filtered.vcf.gz")
-        files['vcf_index'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, wildcards.sample + ".filtered.vcf.gz.tbi")
+        files['vcf'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".filtered.vcf.gz")
+        files['vcf_index'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".filtered.vcf.gz.tbi")
     else:
-        files['vcf'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, wildcards.sample + ".filtered.gt_adjust.vcf.gz")
-        files['vcf_index'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, wildcards.sample + ".filtered.gt_adjust.vcf.gz.tbi")
+        files['vcf'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".filtered.gt_adjust.vcf.gz")
+        files['vcf_index'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".filtered.gt_adjust.vcf.gz.tbi")
     return files
 
 rule createAmbiguousConsensus:
     input:
         unpack(input_createAmbiguousConsensus)
     output:
-        temp(os.path.join(IUPAC_CNS_FOLDER, "{sample}.iupac_consensus.tmp"))
+        temp(os.path.join(IUPAC_CNS_FOLDER, "{snp_calling_tool}", "{sample}.iupac_consensus.tmp"))
     log:
-        os.path.join(DATAFOLDER["logs"], "consensus", "{sample}.iupac_consensus.tmp.log")
+        os.path.join(DATAFOLDER["logs"], "consensus", "{sample}.{snp_calling_tool}.iupac_consensus.tmp.log")
     conda:
         "../envs/bcftools.yaml"
     singularity: 
@@ -139,14 +140,14 @@ rule createAmbiguousConsensus:
 ## adapt consensus header
 rule createHeaderConsensus:
     input:
-        fasta = os.path.join(IUPAC_CNS_FOLDER, "{sample}.iupac_consensus.tmp"),
+        fasta = os.path.join(IUPAC_CNS_FOLDER, "{snp_calling_tool}", "{sample}.iupac_consensus.tmp"),
         version = os.path.join(PROJFOLDER, "pipeline.version") 
     output:
-        os.path.join(IUPAC_CNS_FOLDER, "{sample}.iupac_consensus.fasta")
+        os.path.join(IUPAC_CNS_FOLDER, "{snp_calling_tool}", "{sample}.iupac_consensus.fasta")
     singularity: 
         "docker://rkibioinf/general:3.6.0--28150df"
     log:
-        os.path.join(DATAFOLDER["logs"], "consensus", "{sample}.iupac_consensus.fasta.log")
+        os.path.join(DATAFOLDER["logs"], "consensus", "{sample}.{snp_calling_tool}.iupac_consensus.fasta.log")
     shell:
         r"""
             VERSION=$(cat {input.version})
@@ -156,12 +157,12 @@ rule createHeaderConsensus:
 ## create masked consensus
 rule createMaskedConsensus:
     input:
-        fasta = os.path.join(IUPAC_CNS_FOLDER, "{sample}.iupac_consensus.tmp"),
+        fasta = os.path.join(IUPAC_CNS_FOLDER, "{snp_calling_tool}", "{sample}.iupac_consensus.tmp"),
         version = os.path.join(PROJFOLDER, "pipeline.version")
     output:
-        os.path.join(MASKED_CNS_FOLDER, "{sample}.masked_consensus.fasta")
+        os.path.join(MASKED_CNS_FOLDER, "{snp_calling_tool}", "{sample}.masked_consensus.fasta")
     log:
-        os.path.join(DATAFOLDER["logs"], "consensus", "{sample}.masked_consensus.log")
+        os.path.join(DATAFOLDER["logs"], "consensus", "{sample}.{snp_calling_tool}.masked_consensus.log")
     conda:
         "../envs/bcftools.yaml"
     singularity: 

@@ -8,13 +8,13 @@ rule callGenomicVariants_gatk:
         ref_index = REFERENCE + ".fai",
         bam_index = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam.bai"),
     output:
-        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{sample}.vcf")
+        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "gatk", "{sample}.vcf")
     params:
         cov = VAR_CALL_COV,
         vcount = VAR_CALL_COUNT,
         frac = VAR_CALL_FRAC,
     log:
-        os.path.join(DATAFOLDER["logs"], "variant_calling", "{sample}.log")
+        os.path.join(DATAFOLDER["logs"], "variant_calling", "gatk", "{sample}.log")
     conda:
         "../envs/gatk.yaml"
     threads: 1
