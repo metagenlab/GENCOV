@@ -25,6 +25,7 @@ def parse_args(CMD=None):
 def get_cmd_from_snake(snakemake):
     cmd = ["-o", snakemake.output[0],
            "--vf", snakemake.params.frac,
+           "--ao", snakemake.params.tag_counts,
           snakemake.input[0]]
     cmd = [str(arg) for arg in cmd]
     return cmd
@@ -49,7 +50,9 @@ def process(in_fname, out_fname, min_vf, ao_tag="ao", dp_tag="AO"):
         ref = call.REF
         alt = call.ALT[0]
         depth = int(call.INFO[dp_tag])
+        print("sample data", call.samples[0])
         ref_count, alt_count = call.samples[0][ao_tag]
+
         alt_fract = float(alt_count)/depth
         print(alt_fract)
         if alt_fract < min_vf:

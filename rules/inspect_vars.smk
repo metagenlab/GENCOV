@@ -5,6 +5,7 @@ rule annotateVariants:
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.vcf")
     output:
         report = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.annotation.html"),
+        csv = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.stats.csv"),
         ann_vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.annotation.covered.af.vcf")
     log:
         os.path.join(DATAFOLDER["logs"], "variant_calling", "{sample}.{snp_calling_tool}.annotate.vcf.log")
@@ -24,6 +25,7 @@ rule annotateVariants:
             snpEff ann \
                 -noLog \
                 -stats {output.report} \
+                -csvStats {output.csv} \
                 $genome_name \
                 {input} 1> {output.ann_vcf} 2> {log}
         """

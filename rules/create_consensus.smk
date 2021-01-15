@@ -58,11 +58,11 @@ rule filter_del_positions:
 
 
 ## var hard filtering
-rule filterVarsConsensus:
+rule filterVarsConsensus_gatk:
     input:
-        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.vcf")
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "gatk", "{sample}.vcf")
     output:
-        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.vcf.gz")
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "gatk", "{sample}.filtered.vcf.gz")
     params:
         mqm = VAR_FILTER_MQM,
         sap = VAR_FILTER_SAP,
@@ -72,7 +72,7 @@ rule filterVarsConsensus:
     singularity: 
         "docker://rkibioinf/bcftools:1.11--19c96f3"
     log:
-        os.path.join(DATAFOLDER["logs"], "variant_calling", "{sample}.{snp_calling_tool}.filtered.vcf.log")
+        os.path.join(DATAFOLDER["logs"], "variant_calling", "{sample}.gatk.filtered.vcf.log")
     shell:
         r"""
 			temp_out="{output}"
@@ -85,6 +85,43 @@ rule filterVarsConsensus:
 			}} |& tee {log} 
         """
 
+
+## var hard filtering
+rule filterVarsConsensus_freebayes:
+    input:
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "freebayes", "{sample}.vcf")
+    output:
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "freebayes", "{sample}.filtered.vcf.gz")
+    params:
+        mqm = VAR_FILTER_MQM,
+        sap = VAR_FILTER_SAP,
+        qual = VAR_FILTER_QUAL
+    conda:
+        "../envs/bcftools.yaml"
+    singularity: 
+        "docker://rkibioinf/bcftools:1.11--19c96f3"
+    log:
+        os.path.join(DATAFOLDER["logs"], "variant_calling", "{sample}.freebayes.filtered.vcf.log")
+    shell:
+        r"""
+			temp_out="{output}"
+			temp_out="${{temp_out%%.vcf.gz}}.vcf"
+			{{
+				set -x 
+				bcftools filter -e \
+					"INFO/MQM < {params.mqm} | INFO/SAP > {params.sap} | QUAL < {params.qual}" \
+					 -o "{output}" -O z "{input}"
+			}} |& tee {log} 
+        """
+
+def get_count_tag(wildcards):
+    if wildcards.snp_calling_tool == 'gatk':
+        return 'AD'
+    if wildcards.snp_calling_tool == 'freebayes':
+        return 'AD'
+    else:
+        raise IOError("Unknown snp caller")
+
 ## genotype adjustment 
 rule adjustGtConsensus:
     input:
@@ -95,7 +132,7 @@ rule adjustGtConsensus:
         frac = CNS_GT_ADJUST,
         script = os.path.join(workflow.basedir, "scripts", "adjust_gt.py"),
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.gt_adjust.vcf"),
-        snp_calling_tool = lambda wildcards: wildcards.snp_calling_tool
+        tag_counts = get_count_tag
     conda:
         "../envs/bcftools.yaml"
     script:
@@ -129,7 +166,6 @@ rule createAmbiguousConsensus:
         r"""
             
             ( bcftools consensus \
-                -I \
                 -m {input.mask} \
                 -o {output} \
                 -f {input.fasta} \

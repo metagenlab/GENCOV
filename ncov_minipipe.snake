@@ -213,6 +213,7 @@ def input_all(wildcards):
 
     ## report
     files.append(os.path.join(PROJFOLDER, "qc_report.html"))
+    files.append("report/multiqc/freebayes/multiqc_report.html")
 
     return files
 
@@ -262,3 +263,5 @@ include: "rules/get_insert_size.smk"
 
 #report
 include: "rules/create_report.smk"
+include: "rules/qualimap.smk"
+include: "rules/multiqc.smk"
