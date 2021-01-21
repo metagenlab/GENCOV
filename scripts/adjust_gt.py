@@ -18,19 +18,27 @@ def parse_args(CMD=None):
     parser.add_argument('--ao', metavar="STR", help="tag for read count supporting the respective variant (default: AO)", type=str, default="AD")
     parser.add_argument('--dp', metavar="STR", help="tag for total read count at the repsective position (default: DP)", type=str, default="DP")
     parser.add_argument('-o', help="output file (will be overwritten!)", type=str, required=True)
+    parser.add_argument('-m', help="output file for mixed positions", type=str, required=True)
     parser.add_argument('--vf', metavar="FLOAT", help="minimal variant fraction to set a homogeneous genotype (default: 0.9)", type=float, default=0.9)
     parser.add_argument('--version', action='version', version='%(prog)s ' + VERSION)
     return parser.parse_args(CMD)
 
 def get_cmd_from_snake(snakemake):
     cmd = ["-o", snakemake.output[0],
+           "-m", snakemake.output[1],
            "--vf", snakemake.params.frac,
            "--ao", snakemake.params.tag_counts,
           snakemake.input[0]]
     cmd = [str(arg) for arg in cmd]
     return cmd
                 
-def process(in_fname, out_fname, min_vf, ao_tag="ao", dp_tag="AO"):
+def process(in_fname, 
+            out_fname, 
+            min_vf,
+            out_mixed,
+            ao_tag="ao", 
+            dp_tag="AO",
+            bottom_vf=0.1):
     print("ao_tag", ao_tag)
     print("dp_tag", dp_tag)
     print("min_vf", min_vf)
@@ -44,6 +52,7 @@ def process(in_fname, out_fname, min_vf, ao_tag="ao", dp_tag="AO"):
 
     vcf_reader =  vcf.Reader(filename=in_fname)
     vcf_writer = vcf.Writer(open(intermediate, 'w'), vcf_reader)
+    vcf_writer_mixed = vcf.Writer(open(out_mixed, 'w'), vcf_reader)
     keep=[]
     for call in vcf_reader:
         print(call)
@@ -54,14 +63,22 @@ def process(in_fname, out_fname, min_vf, ao_tag="ao", dp_tag="AO"):
         ref_count, alt_count = call.samples[0][ao_tag]
 
         alt_fract = float(alt_count)/depth
+        # update AF field based on result
+        call.INFO["AF"] = alt_fract
         print(alt_fract)
         if alt_fract < min_vf:
             print(f"{alt_fract} smaller than {min_vf}")
+            # capture mixed position
+            # alt fraction comprised between 0.1 (default) and min_vf
+            if alt_fract > bottom_vf:
+                vcf_writer_mixed.write_record(call)
             continue
         print(f"Writing {ref}{call.POS}{alt}")
         vcf_writer.write_record(call)
     vcf_writer.flush()
     vcf_writer.close()
+    vcf_writer_mixed.flush()
+    vcf_writer_mixed.close()
     if out_gz:
         print("out_gz", out_fname)
         bgzip_outname(intermediate, out_fname)
@@ -81,7 +98,14 @@ def bgzip_outname(_file, outfile=None):
                 
 def main(CMD=None):
         args = parse_args(CMD)
-        process(args.vcf, args.o, args.vf, args.ao, args.dp)
+        process(in_fname=args.vcf, 
+                out_fname=args.o, 
+                min_vf=args.vf,
+                out_mixed=args.m,
+                ao_tag=args.ao, 
+                dp_tag=args.dp)
+
+
 
 if __name__ == "__main__":
         CMD = None

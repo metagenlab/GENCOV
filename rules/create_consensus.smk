@@ -127,7 +127,8 @@ rule adjustGtConsensus:
     input:
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.vcf.gz")
     output:
-        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.gt_adjust.vcf.gz")
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.gt_adjust.vcf.gz"),
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.mixed.vcf"),
     params:
         frac = CNS_GT_ADJUST,
         script = os.path.join(workflow.basedir, "scripts", "adjust_gt.py"),

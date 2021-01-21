@@ -210,11 +210,14 @@ def input_all(wildcards):
     if ANNOT:
         for sample in SAMPLES:
             files.append(os.path.join(DATAFOLDER["variant_calling"], sample, VAR_CALL_TOOL, sample + ".annotation.html"))
+            files.append(os.path.join(DATAFOLDER["variant_calling"], sample, VAR_CALL_TOOL, sample + ".annotation.tsv"))
 
     ## report
     files.append(os.path.join(PROJFOLDER, "qc_report.html"))
     files.append("report/multiqc/freebayes/multiqc_report.html")
-
+    files.append("results/freebayes_all_variants.tsv")
+    files.append("results/freebayes_mixed_count.tsv")
+    
     return files
 
 rule all:
@@ -250,6 +253,7 @@ include: "rules/get_read_cov.smk"
 include: "rules/call_vars_freebayes.smk"
 include: "rules/call_vars_gatk.smk"
 include: "rules/index_vcf.smk"
+include: "rules/mixed_positions.smk"
 
 ## variant annotation
 include: "rules/inspect_vars.smk"
