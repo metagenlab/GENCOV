@@ -1,4 +1,4 @@
-# nCoV_minipipe aka CovPipe
+# GENCOV: pipeline adapted from nCoV_minipipe (aka CovPipe)
 
 [[_TOC_]]
 
