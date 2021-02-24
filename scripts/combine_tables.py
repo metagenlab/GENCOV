@@ -8,14 +8,6 @@ import numpy as np
 
 sample2mutations = {}
 
-aa_map = {'Ala': 'A', 'Cys': 'C', 'Asp': 'D', 'Glu': 'E', 'Phe': 'F', 'Gly': 'G', 'His': 'H', 'Ile': 'I', 'Lys': 'K', 'Leu': 'L', 'Met': 'M', 'Asn': 'N', 'Pro': 'P', 'Gln': 'Q', 'Arg': 'R', 'Ser': 'S', 'Thr': 'T', 'Val': 'V', 'Trp': 'W', 'Tyr': 'Y', 'Ter': '*'}
-
-def multiple_replace(dict, text):
-    # Create a regular expression  from the dictionary keys
-    regex = re.compile("(%s)" % "|".join(map(re.escape, dict.keys())))
-    return regex.sub(lambda mo: dict[mo.string[mo.start():mo.end()]], text) 
-
-
 df_list = []
 for variant_table in variant_tables:
     sample = os.path.basename(variant_table).split(".")[0]
@@ -36,7 +28,7 @@ for variant_table in variant_tables:
         # p.Gln62_Phe63delinsHis => p.Q62_F63delinsH
         # p.His83fs
         if not pandas.isna(aa_change):
-            single_letter = re.sub("p\.", "", multiple_replace(aa_map, aa_change))
+            single_letter = re.sub("p\.", "", aa_change)
             updated_change_aa.append(single_letter)
             updated_change_aa_with_prot.append(f'{single_letter} ({row["GENE"]})')
         else:

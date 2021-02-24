@@ -24,6 +24,7 @@ rule annotateVariants:
             # -t {threads} \
             snpEff ann \
                 -noLog \
+                -hgvs1LetterAa \
                 -stats {output.report} \
                 -csvStats {output.csv} \
                 $genome_name \
