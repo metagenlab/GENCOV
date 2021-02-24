@@ -36,8 +36,8 @@ def process(in_fname,
             out_fname, 
             min_vf,
             out_mixed,
-            ao_tag="ao", 
-            dp_tag="AO",
+            ao_tag="AD", 
+            dp_tag="DP",
             bottom_vf=0.1):
     print("ao_tag", ao_tag)
     print("dp_tag", dp_tag)
