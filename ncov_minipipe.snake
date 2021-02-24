@@ -213,7 +213,7 @@ def input_all(wildcards):
             files.append(os.path.join(DATAFOLDER["variant_calling"], sample, VAR_CALL_TOOL, sample + ".annotation.tsv"))
 
     ## report
-    files.append(os.path.join(PROJFOLDER, "qc_report.html"))
+    #files.append(os.path.join(PROJFOLDER, "qc_report.html"))
     files.append("report/multiqc/freebayes/multiqc_report.html")
     files.append("results/freebayes_all_variants.tsv")
     files.append("results/freebayes_mixed_count.tsv")
