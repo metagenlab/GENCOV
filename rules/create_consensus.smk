@@ -188,7 +188,7 @@ rule createHeaderConsensus:
     shell:
         r"""
             VERSION=$(cat {input.version})
-            sed "1 s/.*/>{wildcards.sample}_iupac_consensus_$VERSION/" {input.fasta} 1> {output} 2> {log}
+            sed "1 s/.*/>{wildcards.sample}/" {input.fasta} 1> {output} 2> {log}
         """
 
 ## create masked consensus
