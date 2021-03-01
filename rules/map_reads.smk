@@ -38,33 +38,6 @@ rule map2reference:
         """
 
 
-rule remove_primers:
-    # add read group tags: https://gatkforums.broadinstitute.org/gatk/discussion/6472/read-groups
-    input:
-        os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam"),
-        REFERENCE,
-    output:
-        temp(os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_{sample}.bam"))
-    log:
-        os.path.join(DATAFOLDER["logs"], "mapping", "fgbio_{sample}.log")
-    conda:
-        "../envs/fgbio.yaml"
-    threads:
-        10
-    shell:
-        r"""
-            (   time \
-                fgbio \
-                    --sam-validation-stringency=LENIENT \
-                    TrimPrimers \
-                    -i {input[0]} \
-                    -o {output[0]} \
-                    -p /home/tpillone/work/dev/metagenlab/ncov_minipipe/data/SARSCoV2.primer_info.tab \
-                    -r {input[1]} \
-                    -H true
-            ) &> {log}
-        """
-
 rule filter_bam_small_alignments:
     """
     filter alignments smaller than 20bp from bam file

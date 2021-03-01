@@ -2,7 +2,7 @@ singularity: "docker://rkibioinf/snpeff:4.5covid19--c40241f"
 
 rule annotateVariants:
     input:
-        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.gt_adjust.vcf.gz")
+        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.ALT_corrected.vcf.gz"),
     output:
         report = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.annotation.html"),
         csv = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.stats.csv"),
