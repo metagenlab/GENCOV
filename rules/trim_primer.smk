@@ -1,10 +1,43 @@
 singularity: "docker://rkibioinf/ptrimmer:1.3.3--a577b16"
 
+
+
+rule remove_primers:
+    # add read group tags: https://gatkforums.broadinstitute.org/gatk/discussion/6472/read-groups
+    input:
+        os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam"),
+        REFERENCE,
+    output:
+        temp(os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_{sample}.bam"))
+    params:
+        primers = config['primer'],
+    log:
+        os.path.join(DATAFOLDER["logs"], "mapping", "fgbio_{sample}.log")
+    conda:
+        "../envs/fgbio.yaml"
+    threads:
+        10
+    shell:
+        r"""
+            (   time \
+                fgbio \
+                    --sam-validation-stringency=LENIENT \
+                    TrimPrimers \
+                    -i {input[0]} \
+                    -o {output[0]} \
+                    -p {params.primers} \
+                    -r {input[1]} \
+                    -H true
+            ) &> {log}
+        """
+
+'''
 def input_trimPrimer(wildcards):
     files = list(getFastq(wildcards))
     if PRIMER:
         files.append(PRIMER)
     return files
+
 
 rule trimPrimer:
     input:
@@ -34,3 +67,4 @@ rule trimPrimer:
                 --keep &> {log}
             gzip -k {output.PE1} {output.PE2}
         """
+'''

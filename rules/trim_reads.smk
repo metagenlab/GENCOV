@@ -1,16 +1,18 @@
 singularity: "docker://rkibioinf/fastp:0.20.1--f3e7ab3"
 
-def input_trimReads(wildcards):
-    if PRIMER:
-        files = [os.path.join(DATAFOLDER["trimmed"], wildcards.sample, wildcards.sample + ".R1.noprimer.fastq.gz"), 
-                 os.path.join(DATAFOLDER["trimmed"], wildcards.sample, wildcards.sample + ".R2.noprimer.fastq.gz")]
-    else:
-        files = list(getFastq(wildcards))
 
+def input_trimReads(wildcards):
+    
+    #if PRIMER:
+    #    files = [os.path.join(DATAFOLDER["trimmed"], wildcards.sample, wildcards.sample + ".R1.noprimer.fastq.gz"), 
+    #             os.path.join(DATAFOLDER["trimmed"], wildcards.sample, wildcards.sample + ".R2.noprimer.fastq.gz")]
+    #else:
+    files = list(getFastq(wildcards))
+    
     if ADAPTERS:
         files.append(ADAPTERS)
-       
     return files
+
 
 rule trimReads:
     input:
@@ -48,3 +50,5 @@ rule trimReads:
                 --overrepresentation_analysis \
                 --thread {threads} ) &> {log}
         """
+
+

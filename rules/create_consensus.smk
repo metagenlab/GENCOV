@@ -114,7 +114,7 @@ rule filterVarsConsensus_freebayes:
 			}} |& tee {log} 
         """
 
-def get_count_tag(wildcards):
+def get_ad_tag(wildcards):
     if wildcards.snp_calling_tool == 'gatk':
         return 'AD'
     if wildcards.snp_calling_tool == 'freebayes':
@@ -127,29 +127,54 @@ rule adjustGtConsensus:
     input:
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.vcf.gz")
     output:
-        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.gt_adjust.vcf.gz"),
-        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.mixed.vcf"),
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.ALT_corrected.vcf.gz"),
     params:
-        frac = CNS_GT_ADJUST,
-        script = os.path.join(workflow.basedir, "scripts", "adjust_gt.py"),
-        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.gt_adjust.vcf"),
-        tag_counts = get_count_tag
+        ao_tag = get_ad_tag,
+        dp_tag = "DP",
+        min_freq=0.1,
     conda:
         "../envs/bcftools.yaml"
     script:
-        "../scripts/adjust_gt.py"
+        "../scripts/update_ALT_freq.py"
 
-## create ambig consensuss
+
+## filter fariants based on ALT frequency 
+rule filter_ALTF_freq:
+    input:
+        vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.ALT_corrected.vcf.gz"),
+    output:
+        filtered_vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.ALT_corrected.freq_filter.vcf"),
+    params:
+        freq = CNS_GT_ADJUST,
+        frac_filter = CNS_GT_ADJUST,
+    conda:
+        "../envs/bcftools.yaml"
+    shell:
+        """
+        bcftools filter -i'AF>{params.frac_filter}' {input[0]} > {output[0]}
+        """
+
+## filter fariants based on ALT frequency 
+rule bgzip_vcf:
+    input:
+        "{path}.vcf",
+    output:
+        "{path}.vcf.gz",
+    conda:
+        "../envs/bcftools.yaml"
+    shell:
+        """
+        bgzip -c {input[0]} > {output[0]}
+        """
+
+## create ambig consensus
+## use filtered vcf with alt freq > CNS_GT_ADJUST
 def input_createAmbiguousConsensus(wildcards):
     files = {}
     files['fasta'] = REFERENCE
     files['mask'] = os.path.join(DATAFOLDER["masking"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".lowcov.bed")
-    if not CNS_GT_ADJUST:
-        files['vcf'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".filtered.vcf.gz")
-        files['vcf_index'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".filtered.vcf.gz.tbi")
-    else:
-        files['vcf'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".filtered.gt_adjust.vcf.gz")
-        files['vcf_index'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".filtered.gt_adjust.vcf.gz.tbi")
+    files['vcf'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".filtered.ALT_corrected.freq_filter.vcf.gz")
+    files['vcf_index'] = os.path.join(DATAFOLDER["variant_calling"], wildcards.sample, "{snp_calling_tool}", wildcards.sample + ".filtered.ALT_corrected.freq_filter.vcf.gz.tbi")
     return files
 
 rule createAmbiguousConsensus:
