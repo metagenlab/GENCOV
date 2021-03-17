@@ -43,7 +43,7 @@ rule filter_bam_small_alignments:
     filter alignments smaller than 20bp from bam file
     """
     input:
-        temp(os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_{sample}.bam"))
+        os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_{sample}.bam")
     output:
         temp(os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.bam"))
     conda:
