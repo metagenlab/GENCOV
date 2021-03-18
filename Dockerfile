@@ -15,13 +15,9 @@ RUN conda config --add channels conda-forge && \
 	conda config --add channels default
 
 # download and install covpipe
-RUN git clone https://github.com/metagenlab/GENCOV.git && echo OK7
+RUN git clone https://github.com/metagenlab/GENCOV.git && echo OK9
 WORKDIR /GENCOV
-RUN bash ncov_minipipe.conda.setup/setup_env.sh
-RUN /GENCOV/covpipe_environment/bin/snakemake -s /GENCOV/ncov_minipipe.snake --cores 16 --use-conda --conda-prefix /GENCOV/.snakemake/conda --configfile /GENCOV/ncov_minipipe.config --conda-create-envs-only  &&  conda clean -a
-
-# --conda-create-envs-only --conda-prefix ${conda_folder} epidemiology --config species="Mycobacterium_tuberculosis"
-
+RUN bash ncov_minipipe.conda.setup/setup_env.sh && /GENCOV/covpipe_environment/bin/snakemake -s /GENCOV/ncov_minipipe.snake --cores 16 --use-conda --conda-prefix /GENCOV/.snakemake/conda --configfile /GENCOV/ncov_minipipe.config --conda-create-envs-only  &&  conda clean -a
 
 ENTRYPOINT ["/bin/bash"]
 ENV PATH /GENCOV/covpipe_environment/bin:$PATH
