@@ -4,8 +4,8 @@ rule assess_mapping_with_qualimap:
         "../envs/qualimap.yaml"   
     input:
         # samples/{sample}/mapping/bwa/{ref}.bam
-        bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam"),
-        bam_bai = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam.bai"),
+        bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers", "small_align_{sample}.sort.bam"),
+        bam_bai = os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.sort.bam.bai"),
     output:
         report = "report/qualimap/{sample}/qualimapReport.html",
         genome_results = "report/qualimap/{sample}/genome_results.txt",

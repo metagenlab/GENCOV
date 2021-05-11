@@ -8,7 +8,7 @@ rule remove_primers:
         os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam"),
         REFERENCE,
     output:
-        temp(os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_{sample}.bam"))
+        os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_{sample}.bam")
     params:
         primers = config['primer'],
     log:
@@ -68,3 +68,18 @@ rule trimPrimer:
             gzip -k {output.PE1} {output.PE2}
         """
 '''
+
+rule filter_bam_small_alignments:
+    """
+    filter alignments smaller than 20bp from bam file
+    """
+    input:
+        os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_{sample}.bam")
+    output:
+        temp(os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.bam"))
+    conda:
+        "../envs/fgbio.yaml"
+    shell:  
+        """
+        fgbio FilterBam -i {input[0]} -m 20 -o {output[0]}
+        """

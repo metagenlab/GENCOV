@@ -19,7 +19,7 @@ rule map2reference:
         ref = REFERENCE,
         ref_index = BWA_INDEX
     output:
-        temp(os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam"))
+        os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam")
     log:
         os.path.join(DATAFOLDER["logs"], "mapping", "{sample}.log")
     conda:
@@ -38,17 +38,3 @@ rule map2reference:
         """
 
 
-rule filter_bam_small_alignments:
-    """
-    filter alignments smaller than 20bp from bam file
-    """
-    input:
-        os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_{sample}.bam")
-    output:
-        temp(os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.bam"))
-    conda:
-        "../envs/fgbio.yaml"
-    shell:  
-        """
-        fgbio FilterBam -i {input[0]} -m 20 -o {output[0]}
-        """

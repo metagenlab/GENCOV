@@ -2,9 +2,9 @@ singularity: "docker://rkibioinf/samtools:1.11--b05ccf8"
 
 rule sortBam:
     input:
-        os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.bam")
+        os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.bam")
     output:
-        os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam")
+        os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.sort.bam")
     log:
         os.path.join(DATAFOLDER["logs"], "mapping", "{sample}.sort.log")
     conda:

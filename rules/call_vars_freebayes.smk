@@ -3,7 +3,7 @@ singularity: "docker://rkibioinf/freebayes:1.3.2--1793b52"
 
 rule callGenomicVariants_freebayes:
     input:
-        bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam"),
+        bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.sort.bam"),
         ref = REFERENCE,
         ref_index = REFERENCE + ".fai"
     output:
