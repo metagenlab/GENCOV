@@ -41,6 +41,7 @@ update_conda_or_install(){
         -c conda-forge  -c bioconda -c defaults \
         "python>=3.6.0" \
         "snakemake>=5.26" \
+        "mamba" \
         strictyaml \
         -ymp "${ENVPATH}"
 }
