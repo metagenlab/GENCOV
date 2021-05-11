@@ -2,11 +2,11 @@
 
 rule callGenomicVariants_gatk:
     input:
-        bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.sort.bam"),
+        bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam"),
         ref = REFERENCE,
         ref_dict = re.sub(".fasta", "",REFERENCE) + '.dict',
         ref_index = REFERENCE + ".fai",
-        bam_index = os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.sort.bam.bai"),
+        bam_index = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam.bai"),
     output:
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "gatk", "{sample}.vcf")
     params:

@@ -1,7 +1,7 @@
 # low coverage hard filtering
 rule createMaskConsensus:
     input:
-        bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.sort.bam")
+        bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam")
     output:
         os.path.join(DATAFOLDER["masking"], "{sample}", "{sample}.lowcov.raw.bed")
     params:

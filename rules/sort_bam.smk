@@ -1,10 +1,18 @@
 singularity: "docker://rkibioinf/samtools:1.11--b05ccf8"
 
+
+def input_sortBam(wildcards):
+    if PRIMER:
+        return os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.bam")
+    else:
+        # will skip: filtering primers, filtering small alignments
+        return os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam")
+
 rule sortBam:
     input:
-        os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.bam")
+        input_sortBam
     output:
-        os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.sort.bam")
+        os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam")
     log:
         os.path.join(DATAFOLDER["logs"], "mapping", "{sample}.sort.log")
     conda:

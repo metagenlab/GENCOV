@@ -235,7 +235,8 @@ include: "rules/index_picard.smk"
 include: "rules/index_bwa.smk"
 
 ## amplicon primer clipping
-include: "rules/trim_primer.smk"
+if PRIMER:
+    include: "rules/trim_primer.smk"
 include: "rules/trim_reads.smk"
 
 ## taxonomic read classification
