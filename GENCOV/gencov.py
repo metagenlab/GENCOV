@@ -3,7 +3,7 @@ import os
 import sys
 import click
 import subprocess
-from assembly_finder import __version__
+from GENCOV import __version__
 
 logging.basicConfig(
     level=logging.INFO,
