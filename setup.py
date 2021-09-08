@@ -14,7 +14,7 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
-setup(name='assembly_finder',
+setup(name='GENCOV',
       version=__version__,
       packages=find_packages(),
       package_data={"":["GENCOV/*", ]},
@@ -29,12 +29,12 @@ setup(name='assembly_finder',
       include_package_data=True,
       keywords=[],
       zip_safe=False,
-      install_requires=['python>=3.6.0', 
-                      'snakemake>=5.2', 
-                      'biopython>=1.77', 
-                      'strictyaml',
-                      'pyvcf', 
-                      'biopython'],
+      python_requires='>=3.6',
+      install_requires=['snakemake>=5.2', 
+                        'biopython>=1.77', 
+                        'strictyaml',
+                        'pyvcf', 
+                        'biopython'],
     )
 
 
