@@ -7,6 +7,7 @@ https://github.com/pypa/sampleproject
 from setuptools import setup, find_packages
 from os import path
 from io import open
+from GENCOV import __version__
 
 here = path.abspath(path.dirname(__file__))
 
