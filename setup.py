@@ -20,7 +20,7 @@ setup(name='GENCOV',
       package_data={"":["GENCOV/*", ]},
       description='SARS-CoV-2 snp-calling and consensus generation - amplicon - Illumina paired-ends reads',
       url='https://github.com/metagenlab/GENCOV',
-      author='Farid Chaabane & Trestan Pillonel',
+      author='Trestan Pillonel',
       author_email='trestan.pillonel@gmail.com',
       entry_points="""
       [console_scripts]

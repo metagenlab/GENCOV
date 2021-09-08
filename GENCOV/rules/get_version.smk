@@ -1,4 +1,3 @@
-#singularity: "docker://rkibioinf/general:3.6.0--53569a8"
 # cd ${params.sd} command problematic in container
 
 rule getVersion:
