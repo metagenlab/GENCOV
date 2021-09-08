@@ -1,5 +1,0 @@
-HUMAN_RAW_MSv3_1X_L150_;../../References/hg19.fa;MSv3;-l 150 -f 1 -na -m 600 -s 30;1589399483
-WUHAN1_NOVAR_MSv3_RAW_50X_L150_;SarsCov2Wuhan1;MSv3;-l 150 -f 50 -na -m 200 -s 30;4566789244
-ColdCorona_MSv3_RAW_50X_L150_;CommonColdCorona;MSv3;-l 150 -f 50 -na -m 200 -s 30;4566989233
-ColdRhino_MSv3_RAW_50X_L150_;CommonColdRhino;MSv3;-l 150 -f 50 -na -m 200 -s 30;2567989200
-KlebsiBacter_MSv3_RAW_50X_L150_;KlebsiellaPneu;MSv3;-l 150 -f 50 -na -m 200 -s 30;453698913

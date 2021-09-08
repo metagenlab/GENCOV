@@ -1,6 +1,8 @@
-singularity: "docker://rkibioinf/kraken2:2.1.0--3006bb7"
+
 
 rule classifyReads:
+    container: 
+        singularity_envs["kraken"]
     input:
         PE1 = os.path.join(DATAFOLDER["trimmed"], "{sample}", "{sample}.R1.fastq.gz"),
         PE2 = os.path.join(DATAFOLDER["trimmed"], "{sample}", "{sample}.R2.fastq.gz")
@@ -14,8 +16,6 @@ rule classifyReads:
         fastq = os.path.join(DATAFOLDER["classified"], "{sample}", "{sample}.R#.fastq.gz")
     log:
         os.path.join(DATAFOLDER["logs"], "classified", "{sample}.classify.log")
-    conda:
-        "../envs/kraken.yaml"
     threads:
         10
     shell:

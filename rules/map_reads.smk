@@ -13,6 +13,8 @@ def input_map2reference(wildcards):
            }
 
 rule map2reference:
+    container: 
+        singularity_envs["bwa-samtools"]
     # add read group tags: https://gatkforums.broadinstitute.org/gatk/discussion/6472/read-groups
     input:
         unpack(input_map2reference),
@@ -22,10 +24,8 @@ rule map2reference:
         os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam")
     log:
         os.path.join(DATAFOLDER["logs"], "mapping", "{sample}.log")
-    conda:
-        "../envs/bwa.yaml"
     threads:
-        10
+        5
     shell:
         r"""
             (   time \
@@ -33,7 +33,7 @@ rule map2reference:
                     -R '@RG\tID:{wildcards.sample}\tPU:{wildcards.sample}\tSM:{wildcards.sample}\tPL:ILLUMINA\tLB:000' \
                     {input.ref} \
                     {input.PE1} {input.PE2} | \
-                    samtools view -Sb -@ {threads} -o {output} \
+                    samtools view -Sb -@ {threads} - | samtools sort -o {output} \
             ) &> {log}
         """
 

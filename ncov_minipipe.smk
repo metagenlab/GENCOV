@@ -15,6 +15,11 @@ import sys
 import yaml
 
 
+print(f"Singularity binding argument: -B {workflow.basedir}:{workflow.basedir}")
+workflow.singularity_args += f' -B {workflow.basedir}:{workflow.basedir}'
+singularity_envs = yaml.safe_load(open(os.path.join(workflow.basedir,  "envs/singularity.yml"), 'r'))
+
+
 # DEBUGGING
 ## use as DEBUG(variable) for debugging at runtime
 pp = pprint.PrettyPrinter(indent=4)
@@ -146,7 +151,7 @@ CNS_GT_ADJUST = config["cns_gt_adjust"] if checkConfigKey('cns_gt_adjust', confi
 REPORT_RUNID = config['run_id'] if checkConfigKey('run_id', config) else ""
 
 ## output folders
-PROJFOLDER = os.path.join(config["output"], "results")
+PROJFOLDER = "results"
 IUPAC_CNS_FOLDER = os.path.join(PROJFOLDER, "consensuses_iupac")
 MASKED_CNS_FOLDER = os.path.join(PROJFOLDER, "consensuses_masked")
 DATAFOLDER = ["logs", "trimmed"]
@@ -160,7 +165,7 @@ if not KRAKEN_DB:
 
 ## files
 REFERENCE = os.path.join(DATAFOLDER["mapping"], "reference.fasta")
-ADAPTERS = config["adapter"] if isFileConfig('adapter', config) else None # the adpater file cannot be provided since it is copyright protected ILLUMINA!
+ADAPTERS = "data/adapters.fasta" # the adpater file cannot be provided since it is copyright protected ILLUMINA!
 
 ## ref indexes
 PICARD_INDEX = os.path.splitext(REFERENCE)[0] + '.dict'
@@ -224,6 +229,28 @@ rule all:
         input_all
 
 
+
+
+
+rule copy_files: 
+    output:
+        "data/primers.tsv",
+        "data/reference_genome.fna",
+        "data/adapters.fasta"
+    params:
+        primers=config["primer"],
+        reference=config["reference"],
+        adapter=config["adapter"]
+    shell:
+        """
+        echo {params.primers} data/primers.tsv
+        cp {params.primers} data/primers.tsv
+        echo {params.reference} data/reference_genome.fna
+        cp {params.reference} data/reference_genome.fna
+        cp {params.adapter} data/adapters.fasta
+        """
+
+
 # RULE IMPORT
 ## general rules
 include: "rules/get_version.smk"
@@ -265,6 +292,5 @@ include: "rules/get_bamstats.smk"
 include: "rules/get_insert_size.smk"
 
 #report
-include: "rules/create_report.smk"
 include: "rules/qualimap.smk"
 include: "rules/multiqc.smk"

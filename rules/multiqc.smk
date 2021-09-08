@@ -23,6 +23,8 @@ rule copy_result_files_for_multiqc:
 
 
 rule multiqc:
+    container: 
+        singularity_envs["multiqc"]
     input:
         expand("report/multiqc/{{snp_calling_tool}}/log/{sample}.log.txt", sample=SAMPLES)
     output:
@@ -30,8 +32,6 @@ rule multiqc:
         "report/multiqc/{snp_calling_tool}/multiqc_data/multiqc_data.json"
     log:
         os.path.join(DATAFOLDER["logs"], "reporting", "{snp_calling_tool}.multiqc.log")
-    conda:
-        "../envs/multiqc.yaml"
     threads:
         1
     shell:

@@ -1,15 +1,13 @@
 # low coverage hard filtering
 rule createMaskConsensus:
+    container: 
+        singularity_envs["bedtools"]
     input:
         bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam")
     output:
         os.path.join(DATAFOLDER["masking"], "{sample}", "{sample}.lowcov.raw.bed")
     params:
         cov = CNS_MIN_COV
-    conda:
-        "../envs/bedtools.yaml"
-    singularity: 
-        "docker://rkibioinf/bedtools:2.29.2--0bfe8ac"
     log:
         os.path.join(DATAFOLDER["logs"], "masking", "{sample}.consensus_mask.log")
     shell:
@@ -19,16 +17,14 @@ rule createMaskConsensus:
 
 # retrieve deletion positions
 rule extract_del_positions:
+    container: 
+        singularity_envs["bcftools"]
     input:
         os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.vcf")
     output:
         os.path.join(DATAFOLDER["masking"], "{sample}", "{snp_calling_tool}","{sample}.del.bed")
     params:
         cov = CNS_MIN_COV
-    conda:
-        "../envs/bcftools.yaml"
-    singularity: 
-        "docker://rkibioinf/bcftools:1.11--19c96f3"
     log:
         os.path.join(DATAFOLDER["logs"], "masking", "{sample}.{snp_calling_tool}.consensus_mask.log")
     shell:
@@ -38,6 +34,8 @@ rule extract_del_positions:
 
 # do not filter deletion positions
 rule filter_del_positions:
+    container: 
+        singularity_envs["bedtools"]
     input:
         os.path.join(DATAFOLDER["masking"], "{sample}", "{sample}.lowcov.raw.bed"),
         os.path.join(DATAFOLDER["masking"], "{sample}", "{snp_calling_tool}", "{sample}.del.bed")
@@ -45,10 +43,6 @@ rule filter_del_positions:
         os.path.join(DATAFOLDER["masking"], "{sample}", "{snp_calling_tool}", "{sample}.lowcov.bed")
     params:
         cov = CNS_MIN_COV
-    conda:
-        "../envs/bedtools.yaml"
-    singularity: 
-        "docker://rkibioinf/bedtools:2.29.2--0bfe8ac"
     log:
         os.path.join(DATAFOLDER["logs"], "masking", "{sample}.{snp_calling_tool}.consensus_mask.log")
     shell:
@@ -59,6 +53,8 @@ rule filter_del_positions:
 
 ## var hard filtering
 rule filterVarsConsensus_gatk:
+    container: 
+        singularity_envs["bcftools"]
     input:
         os.path.join(DATAFOLDER["variant_calling"], "{sample}", "gatk", "{sample}.vcf")
     output:
@@ -88,6 +84,8 @@ rule filterVarsConsensus_gatk:
 
 ## var hard filtering
 rule filterVarsConsensus_freebayes:
+    container: 
+        singularity_envs["bcftools"]
     input:
         os.path.join(DATAFOLDER["variant_calling"], "{sample}", "freebayes", "{sample}.vcf")
     output:
@@ -96,10 +94,6 @@ rule filterVarsConsensus_freebayes:
         mqm = VAR_FILTER_MQM,
         sap = VAR_FILTER_SAP,
         qual = VAR_FILTER_QUAL
-    conda:
-        "../envs/bcftools.yaml"
-    singularity: 
-        "docker://rkibioinf/bcftools:1.11--19c96f3"
     log:
         os.path.join(DATAFOLDER["logs"], "variant_calling", "{sample}.freebayes.filtered.vcf.log")
     shell:
@@ -132,14 +126,14 @@ rule adjustGtConsensus:
         ao_tag = get_ad_tag,
         dp_tag = "DP",
         min_freq=0.1,
-    conda:
-        "../envs/bcftools.yaml"
     script:
         "../scripts/update_ALT_freq.py"
 
 
 ## filter fariants based on ALT frequency 
 rule filter_ALTF_freq:
+    container: 
+        singularity_envs["bcftools"]
     input:
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.ALT_corrected.vcf.gz"),
     output:
@@ -147,8 +141,6 @@ rule filter_ALTF_freq:
     params:
         freq = CNS_GT_ADJUST,
         frac_filter = CNS_GT_ADJUST,
-    conda:
-        "../envs/bcftools.yaml"
     shell:
         """
         bcftools filter -i'AF>{params.frac_filter}' {input[0]} > {output[0]}
@@ -156,6 +148,8 @@ rule filter_ALTF_freq:
 
 ## filter fariants based on ALT frequency 
 rule bgzip_vcf:
+    container: 
+        singularity_envs["bgzip"]
     input:
         "{path}.vcf",
     output:
@@ -178,16 +172,14 @@ def input_createAmbiguousConsensus(wildcards):
     return files
 
 rule createAmbiguousConsensus:
+    container: 
+        singularity_envs["bcftools"]
     input:
         unpack(input_createAmbiguousConsensus)
     output:
         temp(os.path.join(IUPAC_CNS_FOLDER, "{snp_calling_tool}", "{sample}.iupac_consensus.tmp"))
     log:
         os.path.join(DATAFOLDER["logs"], "consensus", "{sample}.{snp_calling_tool}.iupac_consensus.tmp.log")
-    conda:
-        "../envs/bcftools.yaml"
-    singularity: 
-        "docker://rkibioinf/bcftools:1.11--19c96f3"
     shell:
         r"""
             
@@ -225,10 +217,6 @@ rule createMaskedConsensus:
         os.path.join(MASKED_CNS_FOLDER, "{snp_calling_tool}", "{sample}.masked_consensus.fasta")
     log:
         os.path.join(DATAFOLDER["logs"], "consensus", "{sample}.{snp_calling_tool}.masked_consensus.log")
-    conda:
-        "../envs/bcftools.yaml"
-    singularity: 
-        "docker://rkibioinf/bcftools:1.11--19c96f3"
     shell:
         r"""
             VERSION=$(cat {input.version})

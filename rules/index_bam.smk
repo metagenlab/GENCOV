@@ -1,14 +1,13 @@
-singularity: "docker://rkibioinf/samtools:1.11--b05ccf8"
 
 rule indexMapping:
+    container: 
+        singularity_envs["samtools"]
     input:
-        os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam")
+        "{any}.bam"
     output:
-        os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam.bai")
+        "{any}.bam.bai"
     log:
-        os.path.join(DATAFOLDER["logs"], "mapping", "index_{sample}.log")
-    conda:
-        "../envs/samtools.yaml"
+        os.path.join(DATAFOLDER["logs"], "mapping", "{any}.index.log")
     shell:
         r"""
             samtools index {input} &> {log}

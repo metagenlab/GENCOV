@@ -10,6 +10,8 @@ rule getVersion:
         os.path.join(DATAFOLDER["logs"], "version", "git.repository.version.log")
     shell:
         r"""
+            echo git version
+            which git
             cd {params.sd};
             git describe 1> {output} 2> {log} || echo 'unknown_version' 1> {output} 2> {log}
         """

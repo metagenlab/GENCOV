@@ -1,6 +1,7 @@
-singularity: "docker://rkibioinf/bcftools:1.11--19c96f3"
 
 rule tbiIndexVCF:
+    container: 
+        singularity_envs["bcftools"]
     input:
         "{sample}.vcf.gz"
     output:
@@ -13,12 +14,12 @@ rule tbiIndexVCF:
         """
 
 rule csiIndexVCF:
+    container: 
+        singularity_envs["bcftools"]
     input:
         "{sample}.vcf.gz"
     output:
         temp("{sample}.vcf.gz.csi")
-    conda:
-        "../envs/bcftools.yaml"
     shell:
         r"""
             bcftools index -f {input}

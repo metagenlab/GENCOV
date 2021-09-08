@@ -1,4 +1,0 @@
-tiny_test:
-  alt_id: tiny_test_data
-  read1: {TESTDIR}/test_R1.fq.gz
-  read2: {TESTDIR}/test_R2.fq.gz

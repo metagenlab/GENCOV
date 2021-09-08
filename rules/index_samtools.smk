@@ -1,6 +1,7 @@
-singularity: "docker://rkibioinf/samtools:1.11--b05ccf8"
 
 rule indexSamtools:
+    container: 
+        singularity_envs["samtools"]
     input:
         "{fname}"
     output:

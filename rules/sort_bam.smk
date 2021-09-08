@@ -1,5 +1,3 @@
-singularity: "docker://rkibioinf/samtools:1.11--b05ccf8"
-
 
 def input_sortBam(wildcards):
     if PRIMER:
@@ -9,14 +7,14 @@ def input_sortBam(wildcards):
         return os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam")
 
 rule sortBam:
+    container: 
+        singularity_envs["samtools"]
     input:
         input_sortBam
     output:
         os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam")
     log:
         os.path.join(DATAFOLDER["logs"], "mapping", "{sample}.sort.log")
-    conda:
-        "../envs/samtools.yaml"
     threads:
         10
     shell:

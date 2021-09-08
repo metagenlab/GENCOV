@@ -15,9 +15,9 @@ RUN conda config --add channels conda-forge && \
 	conda config --add channels default
 
 # download and install covpipe
-RUN git clone https://github.com/metagenlab/GENCOV.git && echo OK10
+RUN git clone https://github.com/metagenlab/GENCOV.git && echo OK11
 WORKDIR /GENCOV
-RUN bash ncov_minipipe.conda.setup/setup_env.sh && /GENCOV/covpipe_environment/bin/snakemake -s /GENCOV/ncov_minipipe.snake --cores 16 --use-conda --conda-prefix /GENCOV/.snakemake/conda --configfile /GENCOV/ncov_minipipe.config --conda-create-envs-only  &&  conda clean -a
+RUN bash ncov_minipipe.conda.setup/setup_env.sh && conda run -p /GENCOV/covpipe_environment/ snakemake -s /GENCOV/ncov_minipipe.snake --cores 16 --use-conda --conda-prefix /GENCOV/.snakemake/conda --configfile /GENCOV/ncov_minipipe.config --conda-create-envs-only  &&  conda clean -a
 
 ENTRYPOINT ["/bin/bash"]
 ENV PATH /GENCOV/covpipe_environment/bin:$PATH

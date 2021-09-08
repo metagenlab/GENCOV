@@ -1,10 +1,10 @@
 rule indexPicard:
+    container: 
+        singularity_envs["gatk"]
     input:
         REFERENCE
     output:
         PICARD_INDEX
-    conda:
-        "../envs/gatk.yaml"
     log:
         os.path.join(PROJFOLDER, "logs", "index", "picard_reference.log")
     shell:

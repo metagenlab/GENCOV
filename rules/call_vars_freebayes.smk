@@ -1,7 +1,7 @@
 
-singularity: "docker://rkibioinf/freebayes:1.3.2--1793b52"
-
 rule callGenomicVariants_freebayes:
+    container: 
+        singularity_envs["freebayes"]
     input:
         bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam"),
         ref = REFERENCE,
@@ -14,8 +14,6 @@ rule callGenomicVariants_freebayes:
         frac = VAR_CALL_FRAC,
     log:
         os.path.join(DATAFOLDER["logs"], "variant_calling", "freebayes", "{sample}.log")
-    conda:
-        "../envs/freebayes.yaml"
     threads: 1
     shell:
         r"""
@@ -24,13 +22,13 @@ rule callGenomicVariants_freebayes:
 
 
 rule NormVariants_freebayes:
+    container: 
+        singularity_envs["bcftools"]
     input:
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "freebayes", "{sample}.unnorm.vcf"),
         ref = REFERENCE,
     output:
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "freebayes", "{sample}.vcf")
-    conda:
-        "../envs/bcftools.yaml"
     shell:
         """
         bcftools norm --fasta-ref {input.ref} -m -any {input.vcf} > {output[0]}

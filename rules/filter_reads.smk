@@ -1,4 +1,3 @@
-singularity: "docker://rkibioinf/general:3.6.0--28150df"
 
 rule getVirusReads:
     input:

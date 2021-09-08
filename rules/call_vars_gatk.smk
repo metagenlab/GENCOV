@@ -1,6 +1,8 @@
 
 
 rule callGenomicVariants_gatk:
+    container: 
+        singularity_envs["gatk"]
     input:
         bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam"),
         ref = REFERENCE,
@@ -15,8 +17,6 @@ rule callGenomicVariants_gatk:
         frac = VAR_CALL_FRAC,
     log:
         os.path.join(DATAFOLDER["logs"], "variant_calling", "gatk", "{sample}.log")
-    conda:
-        "../envs/gatk.yaml"
     threads: 1
     shell:
         r"""

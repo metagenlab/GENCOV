@@ -1,6 +1,7 @@
-singularity: "docker://rkibioinf/snpeff:4.5covid19--c40241f"
 
 rule annotateVariants:
+    container: 
+        singularity_envs["snpeff"]
     input:
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.ALT_corrected.vcf.gz"),
     output:
@@ -11,8 +12,6 @@ rule annotateVariants:
         os.path.join(DATAFOLDER["logs"], "variant_calling", "{sample}.{snp_calling_tool}.annotate.vcf.log")
     params:
         reference = REFERENCE
-    conda:
-        "../envs/snpeff.yaml"
     threads:
         1
     shell:
@@ -32,12 +31,12 @@ rule annotateVariants:
         """
 
 rule VariantTable:
+    container: 
+        singularity_envs["snpsift"]
     input:
         ann_vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.annotation.covered.af.vcf")
     output:
         snp_table = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.annotation.tsv")
-    conda:
-        "../envs/snpsift.yaml"
     shell:
         """
         SnpSift extractFields {input[0]} CHROM POS REF ALT 'ANN[0].EFFECT' 'ANN[0].GENE' 'ANN[0].HGVS_P' 'ANN[0].AA_POS' DP RO AO > {output[0]}

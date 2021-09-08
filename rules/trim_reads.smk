@@ -1,5 +1,3 @@
-singularity: "docker://rkibioinf/fastp:0.20.1--f3e7ab3"
-
 
 def input_trimReads(wildcards):
     
@@ -15,6 +13,8 @@ def input_trimReads(wildcards):
 
 
 rule trimReads:
+    container: 
+        singularity_envs["fastp"]
     input:
         input_trimReads
     output:
@@ -28,8 +28,6 @@ rule trimReads:
         os.path.join(DATAFOLDER["logs"], "trimming", "{sample}.log")
     params:
         adapters = "--adapter_fasta " + ADAPTERS if ADAPTERS else ""
-    conda:
-        "../envs/fastp.yaml"
     threads:
         10
     shell:

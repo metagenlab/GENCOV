@@ -1,7 +1,7 @@
 
 rule assess_mapping_with_qualimap:
-    conda:
-        "../envs/qualimap.yaml"   
+    container: 
+        singularity_envs["qualimap"] 
     input:
         # samples/{sample}/mapping/bwa/{ref}.bam
         bam = os.path.join(DATAFOLDER["mapping"], "{sample}", "{sample}.sort.bam"),
