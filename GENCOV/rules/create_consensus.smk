@@ -150,8 +150,6 @@ rule bgzip_vcf:
         "{path}.vcf",
     output:
         "{path}.vcf.gz",
-    conda:
-        "../envs/bcftools.yaml"
     shell:
         """
         bgzip -c {input[0]} > {output[0]}

@@ -89,7 +89,7 @@ def run_workflow(configfile,
         sys.exit(1)
     cmd = (
         f"snakemake --snakefile {get_snakefile()} --use-singularity --singularity-prefix {singularity_prefix} "
-        f" --singularity-args {cores} "
+        f" --singularity-args {singularity_args} "
         f" --configfile {configfile} "
         f" --cores {cores} "
         f" {dryrun} "

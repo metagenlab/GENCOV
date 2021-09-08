@@ -81,8 +81,6 @@ rule filter_bam_small_alignments:
         os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_{sample}.bam")
     output:
         temp(os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_small_align_{sample}.bam"))
-    conda:
-        "../envs/fgbio.yaml"
     shell:  
         """
         fgbio FilterBam -i {input[0]} -m 20 -o {output[0]}
