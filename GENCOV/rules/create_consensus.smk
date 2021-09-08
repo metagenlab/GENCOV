@@ -63,10 +63,6 @@ rule filterVarsConsensus_gatk:
         mqm = VAR_FILTER_MQM,
         sap = VAR_FILTER_SAP,
         qual = VAR_FILTER_QUAL
-    conda:
-        "../envs/bcftools.yaml"
-    singularity: 
-        "docker://rkibioinf/bcftools:1.11--19c96f3"
     log:
         os.path.join(DATAFOLDER["logs"], "variant_calling", "{sample}.gatk.filtered.vcf.log")
     shell:
@@ -195,16 +191,12 @@ rule createAmbiguousConsensus:
 rule createHeaderConsensus:
     input:
         fasta = os.path.join(IUPAC_CNS_FOLDER, "{snp_calling_tool}", "{sample}.iupac_consensus.tmp"),
-        version = os.path.join(PROJFOLDER, "pipeline.version") 
     output:
         os.path.join(IUPAC_CNS_FOLDER, "{snp_calling_tool}", "{sample}.iupac_consensus.fasta")
-    singularity: 
-        "docker://rkibioinf/general:3.6.0--28150df"
     log:
         os.path.join(DATAFOLDER["logs"], "consensus", "{sample}.{snp_calling_tool}.iupac_consensus.fasta.log")
     shell:
         r"""
-            VERSION=$(cat {input.version})
             sed "1 s/.*/>{wildcards.sample}/" {input.fasta} 1> {output} 2> {log}
         """
 
@@ -219,7 +211,6 @@ rule createMaskedConsensus:
         os.path.join(DATAFOLDER["logs"], "consensus", "{sample}.{snp_calling_tool}.masked_consensus.log")
     shell:
         r"""
-            VERSION=$(cat {input.version})
-            echo ">{wildcards.sample}_masked_consensus_$VERSION\n" 1> {output} 2> {log}
+            echo ">{wildcards.sample}_masked_consensus\n" 1> {output} 2> {log}
             tail -n +2 {input.fasta} | tr "RYSWKMBDHVN" "N" 1>> {output} 2>> {log}
         """

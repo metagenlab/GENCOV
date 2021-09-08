@@ -1,4 +1,3 @@
-singularity: "docker://rkibioinf/bwa:0.7.17--a9f152d"
 
 def input_map2reference(wildcards):
     if KRAKEN_DB:

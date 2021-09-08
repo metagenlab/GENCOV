@@ -49,8 +49,6 @@ rule merge_variant_tables:
     output:
         "results/{snp_calling_tool}_all_variants.tsv",
         "results/{snp_calling_tool}_all_variants_summary.tsv"
-    conda:
-        "../envs/biopython.yaml"
     script:
         "../scripts/combine_tables.py"
         

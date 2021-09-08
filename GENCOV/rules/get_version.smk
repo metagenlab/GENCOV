@@ -11,7 +11,8 @@ rule getVersion:
     shell:
         r"""
             echo git version
+            wd=$PWD
             which git
             cd {params.sd};
-            git describe 1> {output} 2> {log} || echo 'unknown_version' 1> {output} 2> {log}
+            git describe 1> $wd/{output} 2> $wd/{log} || echo 'unknown_version' 1> $wd/{output} 2> $wd/{log}
         """
