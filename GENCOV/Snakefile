@@ -14,6 +14,7 @@ import pprint
 import sys
 import yaml
 
+ruleorder: adjustGtConsensus > bgzip_vcf
 
 print(f"Singularity binding argument: -B {workflow.basedir}:{workflow.basedir}")
 workflow.singularity_args += f' -B {workflow.basedir}:{workflow.basedir}'
