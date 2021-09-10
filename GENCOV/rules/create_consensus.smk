@@ -112,6 +112,8 @@ def get_ad_tag(wildcards):
     else:
         raise IOError("Unknown snp caller")
 
+
+
 ## genotype adjustment 
 rule adjustGtConsensus:
     input:

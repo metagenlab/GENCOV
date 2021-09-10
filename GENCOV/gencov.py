@@ -32,7 +32,7 @@ def cli(obj):
 @cli.command(
     "run",
     context_settings=dict(ignore_unknown_options=True),
-    short_help="run all assembly_finder pipeline steps"
+    short_help="run all GENCOV pipeline"
 )
 @click.option(
     "-c",

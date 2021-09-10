@@ -8,7 +8,7 @@ if config["trimming"] == 'fgbio':
         input:
             os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam"),
             REFERENCE,
-            "/data/primers.tsv"
+            "data/primers.tsv"
         output:
             os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_{sample}.bam")
         log:
