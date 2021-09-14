@@ -296,5 +296,3 @@ include: "rules/get_insert_size.smk"
 #report
 include: "rules/qualimap.smk"
 include: "rules/multiqc.smk"
-
-include: "rules/manual_edit.smk"
