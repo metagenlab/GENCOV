@@ -130,19 +130,16 @@ rule adjustGtConsensus:
 
 ## filter fariants based on ALT frequency 
 rule filter_ALTF_freq:
-    container: 
-        singularity_envs["bcftools"]
     input:
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.ALT_corrected.vcf.gz"),
     output:
         filtered_vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.ALT_corrected.freq_filter.vcf"),
+        modified_pos = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.edit_pos.tsv"),
     params:
         freq = CNS_GT_ADJUST,
         frac_filter = CNS_GT_ADJUST,
-    shell:
-        """
-        bcftools filter -i'AF>{params.frac_filter}' {input[0]} > {output[0]}
-        """
+    script: "../scripts/filter_vcf.py"
+
 
 ## filter fariants based on ALT frequency 
 rule bgzip_vcf:

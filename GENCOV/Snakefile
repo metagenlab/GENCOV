@@ -14,6 +14,7 @@ import pprint
 import sys
 import yaml
 
+
 ruleorder: adjustGtConsensus > bgzip_vcf
 
 print(f"Singularity binding argument: -B {workflow.basedir}:{workflow.basedir}")
@@ -295,3 +296,5 @@ include: "rules/get_insert_size.smk"
 #report
 include: "rules/qualimap.smk"
 include: "rules/multiqc.smk"
+
+include: "rules/manual_edit.smk"
