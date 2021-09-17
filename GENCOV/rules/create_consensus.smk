@@ -138,6 +138,7 @@ rule filter_ALTF_freq:
     params:
         freq = CNS_GT_ADJUST,
         frac_filter = CNS_GT_ADJUST,
+        keep_positions = config["mutation_filter"]
     script: "../scripts/filter_vcf.py"
 
 

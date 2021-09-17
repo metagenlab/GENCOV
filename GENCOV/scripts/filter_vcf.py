@@ -20,11 +20,13 @@ def update_alt_freq(in_fname,
                     modif_pos_out,
                     keep_variant_list):
 
+    keep_variant_list = [int(i) for i in keep_variant_list]
 
     vcf_reader =  vcf.Reader(filename=in_fname)
     vcf_writer = vcf.Writer(open(out_fname, 'w'), vcf_reader)
     pos_out = open(modif_pos_out, 'w')
     pos_out.write("post\tref\talt\talt_freq\tEPPR\n")
+    
     for call in vcf_reader:
         alt_fract = float(call.INFO["AF"][0])
         # skip call with frequency lower than min_freq
@@ -47,31 +49,10 @@ output_vcf_gz =  snakemake.output[0]
 modified_pos = snakemake.output[1]
 
 min_freq = snakemake.params["frac_filter"]
+position_list = snakemake.params["keep_positions"]
 
-
-'''
-# G24410A
-# G21987A
-# G18905A
-# C13944T
-# C13019T
-# A5584G
-# C27527T
-# G27518A
-# G2518T
-# G6865T
-# A28095T
-# C15237T
-# T5260A
-G2258A
-C8326T
-C19220T
-C28093T
-A11332G
-C22530T
-
-'''
-position_list = [24410, 21987, 13019, 18905, 5584, 27527, 27518, 2518, 6865, 28095, 15237, 5260, 2258, 8326, 19220, 28093, 11332, 22530]
+print("--- FILTER VCF ---")
+print("KEEP", position_list)
 
 update_alt_freq(in_fname=input_vcf_gz,
                 out_fname=output_vcf_gz,
