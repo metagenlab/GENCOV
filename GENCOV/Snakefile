@@ -254,7 +254,6 @@ if PRIMER:
 else:
     rule copy_files: 
         output:
-            "data/primers.tsv",
             "data/reference_genome.fna",
             "data/adapters.fasta"
         params:
@@ -262,7 +261,6 @@ else:
             adapter=config["adapter"]
         shell:
             """
-            echo {params.reference} data/reference_genome.fna
             cp {params.reference} data/reference_genome.fna
             cp {params.adapter} data/adapters.fasta
             """
