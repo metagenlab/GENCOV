@@ -232,25 +232,41 @@ rule all:
 
 
 
+if PRIMER:
 
+    rule copy_files: 
+        output:
+            "data/primers.tsv",
+            "data/reference_genome.fna",
+            "data/adapters.fasta"
+        params:
+            primers=config["primer"],
+            reference=config["reference"],
+            adapter=config["adapter"]
+        shell:
+            """
+            echo {params.primers} data/primers.tsv
+            cp {params.primers} data/primers.tsv
+            echo {params.reference} data/reference_genome.fna
+            cp {params.reference} data/reference_genome.fna
+            cp {params.adapter} data/adapters.fasta
+            """
+else:
+    rule copy_files: 
+        output:
+            "data/primers.tsv",
+            "data/reference_genome.fna",
+            "data/adapters.fasta"
+        params:
+            reference=config["reference"],
+            adapter=config["adapter"]
+        shell:
+            """
+            echo {params.reference} data/reference_genome.fna
+            cp {params.reference} data/reference_genome.fna
+            cp {params.adapter} data/adapters.fasta
+            """
 
-rule copy_files: 
-    output:
-        "data/primers.tsv",
-        "data/reference_genome.fna",
-        "data/adapters.fasta"
-    params:
-        primers=config["primer"],
-        reference=config["reference"],
-        adapter=config["adapter"]
-    shell:
-        """
-        echo {params.primers} data/primers.tsv
-        cp {params.primers} data/primers.tsv
-        echo {params.reference} data/reference_genome.fna
-        cp {params.reference} data/reference_genome.fna
-        cp {params.adapter} data/adapters.fasta
-        """
 
 
 # RULE IMPORT
@@ -296,3 +312,5 @@ include: "rules/get_insert_size.smk"
 #report
 include: "rules/qualimap.smk"
 include: "rules/multiqc.smk"
+
+include: "rules/amplicon_depth.smk"
