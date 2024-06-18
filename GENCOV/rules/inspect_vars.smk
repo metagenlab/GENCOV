@@ -44,6 +44,8 @@ rule VariantTable:
 
 
 rule merge_variant_tables:
+    container: 
+        singularity_envs["biopython"]
     input:
         all_tables = expand(os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{{snp_calling_tool}}", "{sample}.annotation.tsv"), sample=SAMPLES)
     output:
