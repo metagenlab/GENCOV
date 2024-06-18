@@ -116,10 +116,12 @@ def get_ad_tag(wildcards):
 
 ## genotype adjustment 
 rule adjustGtConsensus:
+    container: 
+        singularity_envs["pyvcf"]
     input:
         vcf = os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.vcf.gz")
     output:
-        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.ALT_corrected.vcf.gz"),
+        os.path.join(DATAFOLDER["variant_calling"], "{sample}", "{snp_calling_tool}", "{sample}.filtered.ALT_corrected.vcf"),
     params:
         ao_tag = get_ad_tag,
         dp_tag = "DP",
