@@ -8,7 +8,7 @@ if config["trimming"] == 'fgbio':
         input:
             os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam"),
             REFERENCE,
-            "data/primers.tsv"
+            config["primer"]
         output:
             os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_{sample}.bam")
         log:
@@ -39,7 +39,7 @@ if config["trimming"] == 'ivar':
         input:
             os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam"),
             REFERENCE,
-            "data/primers.tsv",
+            config["primer"],
             os.path.join(DATAFOLDER["mapping"], "{sample}", "unfiltered_{sample}.bam.bai"),
         output:
             os.path.join(DATAFOLDER["mapping"], "{sample}", "filtered_primers_{sample}.ivar.bam")
